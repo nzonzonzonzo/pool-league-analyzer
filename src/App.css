@@ -1,0 +1,413 @@
+/* Pool Team Stats Analyzer - Dark Theme CSS */
+
+/* Import Google Fonts: Domine for headers and Rubik for body text */
+@import url('https://fonts.googleapis.com/css2?family=Domine:wght@400;500;600;700&family=Rubik:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap');
+
+/* Updated CSS variables to match the Google Fonts dark theme */
+:root {
+  /* Primary colors */
+  --primary: #8ab4f8;          /* Light blue for primary elements */
+  --primary-light: #aecbfa;    /* Lighter blue for hover states */
+  --primary-dark: #669df6;     /* Darker blue for active states */
+
+  /* Secondary colors */
+  --secondary: #81c995;        /* Green for success states */
+  --secondary-light: #a8dab5;  /* Light green for hover/backgrounds */
+  --secondary-dark: #5bb974;   /* Dark green for text/accents */
+
+  /* Neutral colors - dark theme */
+  --neutral-50: #2d2d2d;       /* Very dark gray (nearly black) for main background */
+  --neutral-100: #333333;      /* Dark gray for cards and elevated surfaces */
+  --neutral-200: #3c3c3c;      /* Slightly lighter gray for borders */
+  --neutral-300: #4d4d4d;      /* Medium-dark gray for secondary borders */
+  --neutral-400: #5f5f5f;      /* Medium gray for disabled states */
+  --neutral-500: #9aa0a6;      /* Medium gray for secondary text */
+  --neutral-600: #bdc1c6;      /* Light gray for primary text */
+  --neutral-700: #dadce0;      /* Very light gray for emphasized text */
+  --neutral-800: #e8eaed;      /* Nearly white for headings */
+  --neutral-900: #ffffff;      /* White for high-contrast elements */
+
+  /* Semantic colors */
+  --danger: #f28b82;           /* Soft red for errors in dark mode */
+  --success: #81c995;          /* Green for success states */
+  --warning: #fdd663;          /* Yellow for warnings */
+  --info: #8ab4f8;             /* Blue for info (same as primary) */
+
+  /* Background color */
+  --bg-color: #202124;         /* Main background color */
+  --card-bg: #2a2a2a;          /* Card background color */
+
+  /* Additional colors for specific elements */
+  --filter-bg: rgba(174, 203, 250, 0.2);  /* Semi-transparent blue for filter pills */
+  --filter-text: #aecbfa;      /* Text color for filter pills */
+}
+
+/* Base styles for dark theme */
+body {
+  font-family: 'Rubik', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  line-height: 1.5;
+  color: var(--neutral-700);
+  background-color: var(--bg-color);
+  margin: 0;
+  padding: 0;
+}
+
+/* Typography with new fonts */
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Domine', serif;
+  font-weight: 600;
+  line-height: 1.3;
+  margin-top: 0;
+  color: var(--neutral-900);
+}
+
+/* Container and layout */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem;
+}
+
+/* Card styles for dark theme */
+.border {
+  border: 1px solid var(--neutral-200);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.rounded-lg {
+  border-radius: 0.75rem;
+}
+
+.shadow {
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3);
+  transition: box-shadow 0.2s;
+}
+
+.shadow:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+}
+
+/* Make all cards have dark backgrounds */
+.p-4.border, .p-5.border, .p-6.border, .bg-blue-50 {
+  background-color: var(--card-bg);
+}
+
+/* Enhanced button styles */
+button {
+  cursor: pointer;
+  border: none;
+  padding: 0.625rem 1.25rem;
+  border-radius: 0.5rem;
+  font-family: 'Rubik', sans-serif;
+  font-weight: 500;
+  font-size: 0.875rem;
+  letter-spacing: 0.025em;
+  transition: background-color 0.2s, transform 0.1s;
+}
+
+button:active {
+  transform: translateY(1px);
+}
+
+button:focus {
+  outline: 2px solid rgba(174, 203, 250, 0.4);
+  outline-offset: 2px;
+}
+
+button:disabled {
+  background-color: var(--neutral-400);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* Primary button */
+.bg-blue-600, .bg-primary {
+  background-color: var(--primary);
+  color: var(--bg-color);
+}
+
+.bg-blue-600:hover, .bg-primary:hover {
+  background-color: var(--primary-light);
+}
+
+/* Secondary button */
+.bg-gray-300 {
+  background-color: var(--neutral-300);
+  color: var(--neutral-800);
+}
+
+.bg-gray-300:hover {
+  background-color: var(--neutral-400);
+}
+
+/* Success button */
+.bg-green-600, .bg-secondary {
+  background-color: var(--secondary);
+  color: var(--bg-color);
+}
+
+.bg-green-600:hover, .bg-secondary:hover {
+  background-color: var(--secondary-light);
+}
+
+/* Danger button */
+.bg-red-600 {
+  background-color: var(--danger);
+  color: var(--bg-color);
+}
+
+.bg-red-600:hover {
+  background-color: #ff9d96;
+}
+
+/* Form controls */
+select, input {
+  width: 100%;
+  padding: 0.625rem 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--neutral-300);
+  background-color: var(--neutral-50);
+  color: var(--neutral-800);
+  font-family: 'Rubik', sans-serif;
+  font-size: 0.875rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+select:focus, input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(174, 203, 250, 0.2);
+}
+
+/* Filter pill style (like in Google Fonts) */
+.filter-pill {
+  padding: 6px 12px;
+  background-color: var(--filter-bg);
+  color: var(--filter-text);
+  border-radius: 16px;
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.875rem;
+}
+
+.filter-pill .close {
+  margin-left: 8px;
+  cursor: pointer;
+}
+
+/* Enhanced hover states */
+.hover\:bg-gray-100:hover {
+  background-color: var(--neutral-50);
+}
+
+.hover\:bg-blue-100:hover {
+  background-color: rgba(174, 203, 250, 0.1);
+}
+
+/* Player card enhancements */
+div[class*="cursor-pointer"] {
+  transition: transform 0.2s, box-shadow 0.2s, background-color 0.2s;
+}
+
+div[class*="cursor-pointer"]:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+}
+
+/* Progress bars */
+.bg-gray-200 {
+  background-color: var(--neutral-300);
+}
+
+.bg-green-500 {
+  background-color: var(--secondary);
+  transition: width 0.5s ease-out;
+}
+
+/* Table styles for dark theme */
+table {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3);
+  background-color: var(--card-bg);
+}
+
+th {
+  background-color: var(--neutral-100);
+  font-weight: 600;
+  font-family: 'Domine', serif;
+  color: var(--neutral-800);
+  padding: 0.75rem 1rem;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+}
+
+td {
+  padding: 0.75rem 1rem;
+  border-top: 1px solid var(--neutral-200);
+}
+
+tr:hover td {
+  background-color: var(--neutral-50);
+}
+
+/* Loading animation */
+.loading {
+  display: inline-block;
+  position: relative;
+  width: 80px;
+  height: 80px;
+}
+.loading div {
+  position: absolute;
+  border: 4px solid var(--primary);
+  opacity: 1;
+  border-radius: 50%;
+  animation: loading 1s cubic-bezier(0, 0.2, 0.8, 1) infinite;
+}
+.loading div:nth-child(2) {
+  animation-delay: -0.5s;
+}
+@keyframes loading {
+  0% {
+    top: 36px;
+    left: 36px;
+    width: 0;
+    height: 0;
+    opacity: 1;
+  }
+  100% {
+    top: 0px;
+    left: 0px;
+    width: 72px;
+    height: 72px;
+    opacity: 0;
+  }
+}
+
+/* CSS Variable Usage in Class Names */
+.text-primary { color: var(--primary); }
+.text-primary-dark { color: var(--primary-dark); }
+.text-primary-light { color: var(--primary-light); }
+.text-secondary { color: var(--secondary); }
+.text-secondary-dark { color: var(--secondary-dark); }
+.text-secondary-light { color: var(--secondary-light); }
+.text-danger { color: var(--danger); }
+.text-warning { color: var(--warning); }
+.text-info { color: var(--info); }
+.text-neutral-900 { color: var(--neutral-900); }
+.text-neutral-800 { color: var(--neutral-800); }
+.text-neutral-700 { color: var(--neutral-700); }
+.text-neutral-600 { color: var(--neutral-600); }
+.text-neutral-500 { color: var(--neutral-500); }
+
+.bg-primary { background-color: var(--primary); }
+.bg-primary-dark { background-color: var(--primary-dark); }
+.bg-primary-light { background-color: var(--primary-light); }
+.bg-secondary { background-color: var(--secondary); }
+.bg-secondary-dark { background-color: var(--secondary-dark); }
+.bg-secondary-light { background-color: var(--secondary-light); }
+.bg-danger { background-color: var(--danger); }
+.bg-warning { background-color: var(--warning); }
+.bg-info { background-color: var(--info); }
+.bg-neutral-900 { background-color: var(--neutral-900); }
+.bg-neutral-800 { background-color: var(--neutral-800); }
+.bg-neutral-700 { background-color: var(--neutral-700); }
+.bg-neutral-600 { background-color: var(--neutral-600); }
+.bg-neutral-500 { background-color: var(--neutral-500); }
+.bg-neutral-50 { background-color: var(--neutral-50); }
+.bg-red-50 { background-color: rgba(242, 139, 130, 0.1); }
+.bg-red-100 { background-color: rgba(242, 139, 130, 0.2); }
+.bg-orange-500 { background-color: var(--warning); }
+.bg-blue-50 { background-color: rgba(138, 180, 248, 0.1); }
+.bg-blue-100 { background-color: rgba(138, 180, 248, 0.2); }
+.bg-green-50 { background-color: rgba(129, 201, 149, 0.1); }
+
+.border-primary { border-color: var(--primary); }
+.border-secondary { border-color: var(--secondary); }
+.border-danger { border-color: var(--danger); }
+.border-warning { border-color: var(--warning); }
+.border-info { border-color: var(--info); }
+.border-neutral-200 { border-color: var(--neutral-200); }
+.border-blue-100 { border-color: rgba(138, 180, 248, 0.2); }
+.border-blue-200 { border-color: rgba(138, 180, 248, 0.3); }
+.border-red-100 { border-color: rgba(242, 139, 130, 0.2); }
+.border-green-500 { border-color: var(--secondary); }
+.border-blue-500 { border-color: var(--primary); }
+
+/* Gradient backgrounds */
+.bg-gradient-to-br { background: linear-gradient(to bottom right, var(--from-color), var(--to-color)); }
+.from-blue-50 { --from-color: rgba(138, 180, 248, 0.05); }
+.to-blue-100 { --to-color: rgba(138, 180, 248, 0.1); }
+
+/* Transitions */
+.transition-all { transition: all 0.2s; }
+.transition-colors { transition: background-color 0.2s, border-color 0.2s, color 0.2s; }
+.transition-shadow { transition: box-shadow 0.2s; }
+
+/* Hover states */
+.hover\:shadow-md:hover { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2); }
+.hover\:bg-gray-400:hover { background-color: var(--neutral-400); }
+.hover\:bg-neutral-50:hover { background-color: var(--neutral-50); }
+.hover\:bg-white:hover { background-color: var(--neutral-50); }
+.hover\:shadow-md:hover { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2); }
+
+/* Utility classes */
+.mx-auto { margin-left: auto; margin-right: auto; }
+.p-4 { padding: 1rem; }
+.p-8 { padding: 2rem; }
+.p-2 { padding: 0.5rem; }
+.p-6 { padding: 1.5rem; }
+.mb-6 { margin-bottom: 1.5rem; }
+.mb-8 { margin-bottom: 2rem; }
+.mb-4 { margin-bottom: 1rem; }
+.mb-2 { margin-bottom: 0.5rem; }
+.mb-1 { margin-bottom: 0.25rem; }
+.mt-6 { margin-top: 1.5rem; }
+.mt-4 { margin-top: 1rem; }
+.mt-2 { margin-top: 0.5rem; }
+.mt-1 { margin-top: 0.25rem; }
+.mt-8 { margin-top: 2rem; }
+.mr-2 { margin-right: 0.5rem; }
+.text-center { text-align: center; }
+.text-3xl { font-size: 1.875rem; }
+.text-2xl { font-size: 1.5rem; }
+.text-xl { font-size: 1.25rem; }
+.text-lg { font-size: 1.125rem; }
+.text-sm { font-size: 0.875rem; }
+.text-xs { font-size: 0.75rem; }
+.font-bold { font-weight: 700; }
+.font-semibold { font-weight: 600; }
+.font-medium { font-weight: 500; }
+.w-full { width: 100%; }
+.w-24 { width: 6rem; }
+.h-4 { height: 1rem; }
+.h-3 { height: 0.75rem; }
+.h-full { height: 100%; }
+.max-h-64 { max-height: 16rem; }
+.flex { display: flex; }
+.grid { display: grid; }
+.grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+.gap-6 { gap: 1.5rem; }
+.gap-4 { gap: 1rem; }
+.space-x-4 > * + * { margin-left: 1rem; }
+.justify-center { justify-content: center; }
+.justify-between { justify-content: space-between; }
+.items-center { align-items: center; }
+.overflow-x-auto { overflow-x: auto; }
+.overflow-y-auto { overflow-y: auto; }
+.overflow-hidden { overflow: hidden; }
+.cursor-pointer { cursor: pointer; }
+
+/* Responsive utilities */
+@media (min-width: 768px) {
+  .md\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (min-width: 1024px) {
+  .lg\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
