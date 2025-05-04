@@ -501,8 +501,9 @@ function App() {
     const loadData = async () => {
       try {
         // Load JSON files
-        const matchesResponse = await fetch("/data/all_matches.json");
-        const statsResponse = await fetch("/data/team_stats.json");
+        const basePath = import.meta.env.BASE_URL; // This gets the base path from Vite config
+        const matchesResponse = await fetch(`${basePath}data/all_matches.json`);
+        const statsResponse = await fetch(`${basePath}data/team_stats.json`);
 
         if (!matchesResponse.ok || !statsResponse.ok) {
           throw new Error("Failed to fetch data files");
