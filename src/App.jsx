@@ -1131,7 +1131,7 @@ function App() {
                     >
                       <div className="flex justify-between items-center">
                         <span className="font-medium">{player.name}</span>
-                        <span className="text-sm py-1 px-2 bg-blue-50 rounded-full text-primary-dark">
+                        <span className="text-sm py-1 px-2 pr-3 rounded-full text-primary-dark">
                           HCP: {player.handicap}
                         </span>
                       </div>
@@ -1189,7 +1189,7 @@ function App() {
                     >
                       <div className="flex justify-between items-center">
                         <span className="font-medium">{player.name}</span>
-                        <span className="text-sm py-1 px-2 bg-blue-50 rounded-full text-primary-dark">
+                        <span className="text-sm py-1 px-2 pr-3 rounded-full text-primary-dark">
                           HCP: {player.handicap}
                         </span>
                       </div>
