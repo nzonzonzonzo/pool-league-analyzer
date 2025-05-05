@@ -1116,9 +1116,31 @@ const calculateWinProbability = (player1, player2) => {
         <h1 className="text-3xl font-bold mb-6 text-center">
           Pool Team Stats Analyzer
         </h1>
-        <p className="text-center text-sm text-gray-300 mb-6 mx-auto max-w-3xl">
-          Analyzes historical win percentages, previous matchups, and performance patterns to calculate optimal player pairings. Using the Hungarian algorithm, identifies the mathematically best lineup that maximizes your team's overall winning probability.
-        </p>
+        
+      <div className="text-sm text-gray-500 mb-4">
+        Found {teams.length} teams and {teamStats.length} players
+      </div>
+      
+      <div className="bg-gray-800 p-6 rounded-lg mb-8 text-gray-300 text-sm">
+        <h2 className="text-xl font-semibold mb-3 text-white">How Win Probabilities and Optimal Matchups Are Calculated</h2>
+        <p className="mb-4">The Pool Team Stats Analyzer uses advanced algorithms to both calculate individual matchup probabilities and determine the optimal overall lineup strategy.</p>
+        
+        <h3 className="text-lg font-medium mb-2 text-white">Individual Matchup Probability Factors</h3>
+        <ol className="list-decimal list-inside mb-4 pl-2">
+          <li className="mb-1"><span className="font-medium">Base Win Percentages:</span> Each player's overall win percentage serves as the foundation (30% weight)</li>
+          <li className="mb-1"><span className="font-medium">Head-to-Head History:</span> Direct matchup results between the specific players are heavily weighted:
+            <ul className="list-disc list-inside pl-6 mt-1">
+              <li>More previous matches = stronger influence (up to 50% weight)</li>
+              <li>Recent matches count more than older ones</li>
+            </ul>
+          </li>
+          <li className="mb-1"><span className="font-medium">Performance Against Similar Handicap Levels:</span> How well players perform against opponents of comparable skill levels:
+            <ul className="list-disc list-inside pl-6 mt-1">
+              <li>Tracks win rates against higher, equal, and lower handicapped players</li>
+              <li>Helps predict performance in matchups with specific opponent types</li>
+            </ul>
+          </li>
+        </ol>
         <div className="text-xs text-gray-500 mb-4">
           Found {teams.length} teams and {teamStats.length} players
         </div>
