@@ -21,7 +21,7 @@ jobs:
       - name: Install dependencies
         run: npm install axios cheerio
       
-      - name: Create archive directory if it doesn't exist
+      - name: Create data directories if they don't exist
         run: mkdir -p public/data/archives
       
       - name: Archive current stats file if it exists
@@ -38,100 +38,31 @@ jobs:
       
       - name: Run scraper
         run: |
-          node -e "
-          const axios = require('axios');
-          const cheerio = require('cheerio');
-          const fs = require('fs');
-
-          async function scrapeAndUpdateStats(jsonFilePath = 'public/data/team_stats.json', authCookie = '${{ secrets.BILLIARDS_COOKIE }}') {
-            try {
-              console.log('Starting scraper...');
-              // Fetch the page content with the authentication cookie
-              const response = await axios.get('https://leagues2.amsterdambilliards.com/8ball/abc/individual_standings.php?foo=bar', {
-                headers: {
-                  'Cookie': authCookie
-                }
-              });
-              
-              console.log('Page fetched successfully, parsing data...');
-              // Load the HTML into cheerio
-              const $ = cheerio.load(response.data);
-              
-              // Initialize an array to hold all player data
-              const allPlayerData = [];
-              
-              // Find all team tables
-              $('tr.data_level_1_nobg, tr[bgcolor=\"#FF6500\"] + table, tr[bgcolor=\"#000080\"] + table, tr[bgcolor=\"#551A8B\"] + table, tr[bgcolor=\"#CD2626\"] + table, tr[bgcolor=\"#006400\"] + table, tr[bgcolor=\"#CC9900\"] + table').each(function() {
-                // Get the team name from the previous row
-                const teamNameElement = $(this).find('td b i');
-                if (teamNameElement.length === 0) return;
-                
-                const teamName = teamNameElement.text().trim();
-                console.log('Processing team: ' + teamName);
-                
-                // Find player rows within the team table
-                const playerRows = $(this).next('table').find('tr:not(:first-child):not(:last-child)');
-                
-                playerRows.each(function() {
-                  const cells = $(this).find('td');
-                  if (cells.length < 10) return; // Skip header rows or malformed rows
-                  
-                  // Extract the data from the cells
-                  const name = $(cells[1]).text().replace(/\\s+/g, ' ').trim().replace(/^b/, '');
-                  if (!name || name === 'Totals') return; // Skip rows without names or the totals row
-                  
-                  const handicap = parseInt($(cells[2]).text().trim(), 10) || 0;
-                  const wins = parseInt($(cells[5]).text().trim(), 10) || 0;
-                  const losses = parseInt($(cells[6]).text().trim(), 10) || 0;
-                  const total = parseInt($(cells[7]).text().trim(), 10) || 0;
-                  
-                  // Calculate win percentage
-                  const winPercentage = total > 0 ? ((wins / total) * 100).toFixed(1) + '%' : '0.0%';
-                  
-                  // Add player data to the array
-                  allPlayerData.push({
-                    team: teamName,
-                    name,
-                    handicap,
-                    wins,
-                    losses,
-                    total,
-                    winPercentage
-                  });
-                });
-              });
-              
-              // Sort players alphabetically by team and then by name
-              allPlayerData.sort((a, b) => {
-                if (a.team !== b.team) {
-                  return a.team.localeCompare(b.team);
-                }
-                return a.name.localeCompare(b.name);
-              });
+          # Create a temporary copy of the scraper with the secret cookie
+          cat > temp_scraper.js << 'EOL'
+          const { scrapeAndUpdateStats } = require('./scraper.js');
+          
+          // Run the scraper with the correct path and secret cookie
+          scrapeAndUpdateStats('public/data/team_stats.json', '${{ secrets.BILLIARDS_COOKIE }}')
+            .then(data => {
+              console.log(`Scraper completed successfully. Processed ${data.length} player records.`);
               
               // Validation to ensure we don't save empty data
-              if (allPlayerData.length < 50) {
-                throw new Error('Scraped data appears incomplete. Only found ' + allPlayerData.length + ' players.');
+              if (data.length < 50) {
+                console.warn(`Warning: Scraped data appears small. Only found ${data.length} players.`);
               }
-              
-              // Save the data to a JSON file
-              fs.writeFileSync(jsonFilePath, JSON.stringify(allPlayerData, null, 2));
-              console.log('Data successfully written to ' + jsonFilePath + ' with ' + allPlayerData.length + ' player records');
-              
-              return allPlayerData;
-            } catch (error) {
-              console.error('Error scraping data:', error);
-              throw error;
-            }
-          }
-
-          scrapeAndUpdateStats()
-            .then(data => console.log('Scraper completed successfully'))
+            })
             .catch(err => { 
               console.error('Scraper failed:', err); 
               process.exit(1); 
             });
-          "
+          EOL
+          
+          # Run the temporary script
+          node temp_scraper.js
+          
+          # Remove the temporary script that contains the secret
+          rm temp_scraper.js
       
       - name: Commit and push changes
         uses: EndBug/add-and-commit@v9
