@@ -1117,7 +1117,7 @@ const calculateWinProbability = (player1, player2) => {
           Pool Team Stats Analyzer
         </h1>
         <p className="text-center text-sm text-gray-300 mb-6 mx-auto max-w-3xl">
-          Your strategic pool match advisor — we analyze historical win percentages, previous matchups, and performance patterns to calculate optimal player pairings. Using the Hungarian algorithm, we identify the mathematically best lineup that maximizes your team's overall winning probability, giving you a competitive edge backed by data science.
+          Analyzes historical win percentages, previous matchups, and performance patterns to calculate optimal player pairings. Using the Hungarian algorithm, identifies the mathematically best lineup that maximizes your team's overall winning probability.
         </p>
         <div className="text-xs text-gray-500 mb-4">
           Found {teams.length} teams and {teamStats.length} players
