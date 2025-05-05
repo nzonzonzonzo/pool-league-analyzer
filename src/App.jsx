@@ -677,72 +677,70 @@ function App() {
   };
 
   // Calculate win probability
-  const calculateWinProbability = (player1, player2) => {
-    // Find player stats
-    const player1Stats = teamStats.find((p) => p.name === player1);
-    const player2Stats = teamStats.find((p) => p.name === player2);
+const calculateWinProbability = (player1, player2) => {
+  // Find player stats
+  const player1Stats = teamStats.find((p) => p.name === player1);
+  const player2Stats = teamStats.find((p) => p.name === player2);
 
-    if (!player1Stats || !player2Stats) return 0.5;
+  if (!player1Stats || !player2Stats) return 0.5;
 
-    // Base probability from raw win percentages
-    let p1WinPercentage = 0.5;
-    let p2WinPercentage = 0.5;
+  // Base probability from raw win percentages
+  let p1WinPercentage = 0.5;
+  let p2WinPercentage = 0.5;
 
-    try {
-      p1WinPercentage = parseFloat(player1Stats.winPercentage) / 100;
-      p2WinPercentage = parseFloat(player2Stats.winPercentage) / 100;
-    } catch (e) {
-      console.error("Error parsing win percentages:", e);
-    }
+  try {
+    p1WinPercentage = parseFloat(player1Stats.winPercentage) / 100;
+    p2WinPercentage = parseFloat(player2Stats.winPercentage) / 100;
+  } catch (e) {
+    console.error("Error parsing win percentages:", e);
+  }
 
-    // Adjust for handicap difference
-    const handicapDiff = player1Stats.handicap - player2Stats.handicap;
-    let handicapAdjustment = handicapDiff * 0.05; // Each handicap point worth ~5%
+  // Adjust for historical head-to-head performance
+  const h2h = getHeadToHeadRecord(player1, player2);
+  let h2hAdjustment = 0;
 
-    // Adjust for historical head-to-head performance
-    const h2h = getHeadToHeadRecord(player1, player2);
-    let h2hAdjustment = 0;
+  if (h2h.totalMatches > 0) {
+    const h2hWinRate = h2h.player1Wins / h2h.totalMatches;
+    // Weight the head-to-head results (more weight if more matches played)
+    const h2hWeight = Math.min(h2h.totalMatches / 5, 0.5); // Cap at 50% influence
+    h2hAdjustment = (h2hWinRate - 0.5) * h2hWeight;
+  }
 
-    if (h2h.totalMatches > 0) {
-      const h2hWinRate = h2h.player1Wins / h2h.totalMatches;
-      // Weight the head-to-head results (more weight if more matches played)
-      const h2hWeight = Math.min(h2h.totalMatches / 5, 0.5); // Cap at 50% influence
-      h2hAdjustment = (h2hWinRate - 0.5) * h2hWeight;
-    }
+  // Calculate performance against similar handicap levels
+  const p1VsHandicap = calculateWinRatesByHandicap(player1);
+  const p2VsHandicap = calculateWinRatesByHandicap(player2);
 
-    // Calculate performance against similar handicap levels
-    const p1VsHandicap = calculateWinRatesByHandicap(player1);
-    const p2VsHandicap = calculateWinRatesByHandicap(player2);
+  // Get the handicap difference, but only use it to select the appropriate category
+  const handicapDiff = player1Stats.handicap - player2Stats.handicap;
+  
+  let handicapCategoryAdjustment = 0;
+  if (handicapDiff < 0) {
+    // Player 1 is playing against a higher handicapped player
+    handicapCategoryAdjustment =
+      ((p1VsHandicap.higher || 0) - (p2VsHandicap.lower || 0)) * 0.1;
+  } else if (handicapDiff > 0) {
+    // Player 1 is playing against a lower handicapped player
+    handicapCategoryAdjustment =
+      ((p1VsHandicap.lower || 0) - (p2VsHandicap.higher || 0)) * 0.1;
+  } else {
+    // Equal handicaps
+    handicapCategoryAdjustment =
+      ((p1VsHandicap.equal || 0) - (p2VsHandicap.equal || 0)) * 0.1;
+  }
 
-    let handicapCategoryAdjustment = 0;
-    if (handicapDiff < 0) {
-      // Player 1 has lower handicap than Player 2
-      handicapCategoryAdjustment =
-        ((p1VsHandicap.higher || 0) - (p2VsHandicap.lower || 0)) * 0.1;
-    } else if (handicapDiff > 0) {
-      // Player 1 has higher handicap than Player 2
-      handicapCategoryAdjustment =
-        ((p1VsHandicap.lower || 0) - (p2VsHandicap.higher || 0)) * 0.1;
-    } else {
-      // Equal handicaps
-      handicapCategoryAdjustment =
-        ((p1VsHandicap.equal || 0) - (p2VsHandicap.equal || 0)) * 0.1;
-    }
+  // Combine all factors
+  // Start with 50% and add all adjustments
+  let finalProbability =
+    0.5 +
+    (p1WinPercentage - p2WinPercentage) * 0.3 + // Increase win percentage weight to 30%
+    h2hAdjustment +
+    handicapCategoryAdjustment;
 
-    // Combine all factors
-    // Start with 50% and add all adjustments
-    let finalProbability =
-      0.5 +
-      (p1WinPercentage - p2WinPercentage) * 0.2 + // Win percentage has 20% weight
-      handicapAdjustment +
-      h2hAdjustment +
-      handicapCategoryAdjustment;
+  // Ensure probability is between 0 and 1
+  finalProbability = Math.max(0.05, Math.min(0.95, finalProbability));
 
-    // Ensure probability is between 0 and 1
-    finalProbability = Math.max(0.05, Math.min(0.95, finalProbability));
-
-    return finalProbability;
-  };
+  return finalProbability;
+};
 
   // Fix for the "Cannot read properties of undefined (reading 'map')" error
   // Add these safety checks to your generateOptimalMatchups function
@@ -1118,8 +1116,10 @@ function App() {
         <h1 className="text-3xl font-bold mb-6 text-center">
           Pool Team Stats Analyzer
         </h1>
-
-        <div className="text-sm text-gray-500 mb-4">
+        <p className="text-center text-sm text-gray-300 mb-6 mx-auto max-w-3xl">
+          Your strategic pool match advisor — we analyze historical win percentages, previous matchups, and performance patterns to calculate optimal player pairings. Using the Hungarian algorithm, we identify the mathematically best lineup that maximizes your team's overall winning probability, giving you a competitive edge backed by data science.
+        </p>
+        <div className="text-xs text-gray-500 mb-4">
           Found {teams.length} teams and {teamStats.length} players
         </div>
 
