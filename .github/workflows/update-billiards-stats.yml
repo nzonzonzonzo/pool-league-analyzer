@@ -71,3 +71,4 @@ jobs:
           message: 'Auto-update billiards stats on $(date +"%Y-%m-%d")'
           push: true
           default_author: github_actions
+
