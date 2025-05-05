@@ -19,7 +19,12 @@ jobs:
           node-version: '18'
           
       - name: Install dependencies
-        run: npm install
+        run: |
+          # Remove package-lock.json if it exists to avoid npm ci conflicts
+          if [ -f package-lock.json ]; then
+            rm package-lock.json
+          fi
+          npm install
       
       - name: Create data directories if they don't exist
         run: mkdir -p public/data/archives
@@ -36,10 +41,17 @@ jobs:
             echo "No existing stats file to archive"
           fi
       
-      - name: Run scraper
+      - name: Create debug directory and run scraper
         run: |
+          # Set to development mode for more verbose logging
+          export NODE_ENV=development
+          
+          # Create debug directory
+          mkdir -p debug
+          
           # Create a temporary copy of the scraper with the secret cookie
-          cat > temp_scraper.js << 'EOL'
+          TEMP_SCRIPT="temp_$(date +%s)_scraper.js"
+          cat > ${TEMP_SCRIPT} << 'EOL'
           const { scrapeAndUpdateStats } = require('./scraper.js');
           
           // Run the scraper with the correct path and secret cookie
@@ -59,10 +71,10 @@ jobs:
           EOL
           
           # Run the temporary script
-          node temp_scraper.js
+          node ${TEMP_SCRIPT}
           
           # Remove the temporary script that contains the secret
-          rm temp_scraper.js
+          rm ${TEMP_SCRIPT}
       
       - name: Commit and push changes
         uses: EndBug/add-and-commit@v9
@@ -71,4 +83,3 @@ jobs:
           message: 'Auto-update billiards stats on $(date +"%Y-%m-%d")'
           push: true
           default_author: github_actions
-
