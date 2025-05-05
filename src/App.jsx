@@ -1141,6 +1141,8 @@ const calculateWinProbability = (player1, player2) => {
             </ul>
           </li>
         </ol>
+        </div>
+        
         <div className="text-xs text-gray-500 mb-4">
           Found {teams.length} teams and {teamStats.length} players
         </div>
