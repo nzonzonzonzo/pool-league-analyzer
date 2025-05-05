@@ -1374,6 +1374,8 @@ const calculateWinProbability = (player1, player2) => {
   if (currentStep === "coin-flip") {
     return (
       <div className="container mx-auto p-4">
+      <FloatingInfoButton onClick={() => setShowInfoPopup(true)} />
+      <InfoPopup isOpen={showInfoPopup} onClose={() => setShowInfoPopup(false)} />
         <h1 className="text-3xl font-bold mb-6 text-center">
           Pool Team Stats Analyzer
         </h1>
@@ -1481,6 +1483,8 @@ const calculateWinProbability = (player1, player2) => {
       // We won the coin flip, opponent puts up blind for game 1
       return (
         <div className="container mx-auto p-4">
+        <FloatingInfoButton onClick={() => setShowInfoPopup(true)} />
+        <InfoPopup isOpen={showInfoPopup} onClose={() => setShowInfoPopup(false)} />
           <h1 className="text-3xl font-bold mb-6 text-center">
             Pool Team Stats Analyzer
           </h1>
@@ -1657,6 +1661,8 @@ const calculateWinProbability = (player1, player2) => {
 
       return (
         <div className="container mx-auto p-4">
+        <FloatingInfoButton onClick={() => setShowInfoPopup(true)} />
+        <InfoPopup isOpen={showInfoPopup} onClose={() => setShowInfoPopup(false)} />
           <h1 className="text-3xl font-bold mb-6 text-center">
             Pool Team Stats Analyzer
           </h1>
@@ -1843,6 +1849,8 @@ const calculateWinProbability = (player1, player2) => {
       // We won the coin flip, opponent puts up blind for game 3
       return (
         <div className="container mx-auto p-4">
+        <FloatingInfoButton onClick={() => setShowInfoPopup(true)} />
+       <InfoPopup isOpen={showInfoPopup} onClose={() => setShowInfoPopup(false)} />
           <h1 className="text-3xl font-bold mb-6 text-center">
             Pool Team Stats Analyzer
           </h1>
@@ -2015,6 +2023,8 @@ const calculateWinProbability = (player1, player2) => {
 
       return (
         <div className="container mx-auto p-4">
+        <FloatingInfoButton onClick={() => setShowInfoPopup(true)} />
+        <InfoPopup isOpen={showInfoPopup} onClose={() => setShowInfoPopup(false)} />
           <h1 className="text-3xl font-bold mb-6 text-center">
             Pool Team Stats Analyzer
           </h1>
@@ -2219,6 +2229,8 @@ const calculateWinProbability = (player1, player2) => {
 
     return (
       <div className="container mx-auto p-4">
+      <FloatingInfoButton onClick={() => setShowInfoPopup(true)} />
+      <InfoPopup isOpen={showInfoPopup} onClose={() => setShowInfoPopup(false)} />
         <h1 className="text-3xl font-bold mb-6 text-center">
           Pool Team Stats Analyzer
         </h1>
