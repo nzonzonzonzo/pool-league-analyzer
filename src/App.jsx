@@ -18,7 +18,17 @@ const formatName = (fullName) => {
 
 // SVG Icon Components
 const LightbulbIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-yellow-400">
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="12"
+    height="12"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="#bdc1c6"
+    strokeWidth="1"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <path d="M9 18h6"></path>
     <path d="M10 22h4"></path>
     <path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8A6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"></path>
@@ -26,7 +36,17 @@ const LightbulbIcon = () => (
 );
 
 const CloseIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="12"
+    height="12"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="#bdc1c6"
+    strokeWidth="1"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <line x1="18" y1="6" x2="6" y2="18"></line>
     <line x1="6" y1="6" x2="18" y2="18"></line>
   </svg>
@@ -35,7 +55,7 @@ const CloseIcon = () => (
 // Floating info button that always stays in the top-right corner
 const FloatingInfoButton = ({ onClick }) => (
   <button 
-    className="fixed top-4 right-4 z-40 p-3 bg-gray-700 hover:bg-gray-600 rounded-full shadow-lg transition-colors duration-200"
+    className="fixed top-4 right-4 z-40 p-0 bg-transparent hover:opacity-80 transition-opacity duration-200"
     onClick={onClick}
     aria-label="Show Information"
   >
