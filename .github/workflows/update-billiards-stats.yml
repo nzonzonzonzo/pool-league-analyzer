@@ -16,10 +16,10 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '16'
+          node-version: '18'
           
       - name: Install dependencies
-        run: npm install axios cheerio
+        run: npm install
       
       - name: Create data directories if they don't exist
         run: mkdir -p public/data/archives
@@ -69,4 +69,5 @@ jobs:
         with:
           add: 'public/data/'
           message: 'Auto-update billiards stats on $(date +"%Y-%m-%d")'
+          push: true
           default_author: github_actions
