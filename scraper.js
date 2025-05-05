@@ -17,9 +17,9 @@ async function scrapeAndUpdateStats(jsonFilePath = 'public/data/team_stats.json'
 
   try {
     console.log('Starting scraper...');
-    // Fetch the page content with the authentication cookie
     console.log('Fetching page with cookie (first 15 chars): ' + authCookie.substring(0, 15) + '...');
     
+    // Fetch the page content with the authentication cookie
     const response = await axios.get('https://leagues2.amsterdambilliards.com/8ball/abc/individual_standings.php?foo=bar', {
       headers: {
         'Cookie': authCookie,
@@ -27,7 +27,6 @@ async function scrapeAndUpdateStats(jsonFilePath = 'public/data/team_stats.json'
       }
     });
     
-    console.log('Page fetched successfully, parsing data...');
     // Load the HTML into cheerio
     const $ = cheerio.load(response.data);
     
@@ -69,7 +68,6 @@ async function scrapeAndUpdateStats(jsonFilePath = 'public/data/team_stats.json'
     console.log(`Found ${teamNameElements} team name elements and ${teamTables} team tables`);
     
     // Initialize an array to hold all player data
-    const allPlayerData = [];
     const allPlayerData = [];
     
     // Try a completely different selector approach based on the HTML structure
@@ -146,40 +144,61 @@ async function scrapeAndUpdateStats(jsonFilePath = 'public/data/team_stats.json'
     
     console.log(`Total players found: ${playerCount}`);
     
-    // Skip our previous approach entirely as it wasn't working
-        // Skip totals row which has class "level_4"
-        if ($(this).find('td.level_4').length > 0) return;
+    // Validation to ensure we don't save empty data
+    if (allPlayerData.length === 0) {
+      console.error("Error: No player data was found!");
+      
+      // If in development, provide more detailed debugging
+      if (process.env.NODE_ENV === 'development') {
+        console.log("HTML structure debug info:");
+        console.log(`- Page title: "${$('title').text()}"`);
+        console.log(`- Tables found: ${$('table').length}`);
+        console.log(`- Is login page? ${$('form[name="login"]').length > 0 ? 'Yes' : 'No'}`);
         
-        const cells = $(this).find('td');
-        if (cells.length < 5) return; // Skip any malformed rows
+        // Log a sample of what we're dealing with for debugging
+        fs.writeFileSync('debug/html_sample.txt', response.data.substring(0, 5000));
+        console.log("Saved first 5000 characters of HTML to debug/html_sample.txt");
         
-        // Extract the data from the cells - adjusting for the actual structure
-        const name = $(cells[1]).text().replace(/\s+/g, ' ').trim().replace(/^b/, '');
-        if (!name || name === 'Totals') return; // Skip rows without names or the totals row
-        
-        // The website actually uses the <b> tags for player names, so handle that
-        const nameText = name.replace(/^B/i, ''); // Remove any leading 'B' from the text extraction
-        
-        const handicap = parseInt($(cells[2]).text().trim(), 10) || 0;
-        const wins = parseInt($(cells[5]).text().trim(), 10) || 0;
-        const losses = parseInt($(cells[6]).text().trim(), 10) || 0;
-        const total = parseInt($(cells[7]).text().trim(), 10) || 0;
-        
-        // Calculate win percentage
-        const winPercentage = total > 0 ? ((wins / total) * 100).toFixed(1) + '%' : '0.0%';
-        
-        // Add player data to the array
-        allPlayerData.push({
-          team: teamName,
-          name,
-          handicap,
-          wins,
-          losses,
-          total,
-          winPercentage
+        // Extract page messages, which might indicate login errors or other issues
+        const messages = [];
+        $('center').each(function() {
+          const text = $(this).text().trim();
+          if (text.length > 0) {
+            messages.push(text);
+          }
         });
+        fs.writeFileSync('debug/page_messages.txt', messages.join('\n'));
+        
+        // Try a desperate direct search for team names in the raw HTML
+        console.log("\nAttempting emergency fallback pattern matching...");
+        const teamMatches = response.data.match(/[^>]<b><i>([^<]+)<\/i><\/b>/g);
+        if (teamMatches && teamMatches.length > 0) {
+          console.log(`Found ${teamMatches.length} potential team names in raw HTML`);
+          fs.writeFileSync('debug/team_matches.txt', JSON.stringify(teamMatches, null, 2));
+        } else {
+          console.log("No team names found in raw HTML");
+        }
+        
+        // Try looking for player data patterns in the HTML
+        const playerNameMatches = response.data.match(/<td class="[^"]+"[^>]*><b>[^<]+<\/b><\/td>/g);
+        if (playerNameMatches && playerNameMatches.length > 0) {
+          console.log(`Found ${playerNameMatches.length} potential player name cells in raw HTML`);
+          fs.writeFileSync('debug/player_matches.txt', JSON.stringify(playerNameMatches.slice(0, 20), null, 2));
+        } else {
+          console.log("No player name patterns found in raw HTML");
+        }
+      }
+      
+      // Create a placeholder with a message instead of empty data
+      // This will show up in the JSON file and help with debugging
+      allPlayerData.push({
+        error: true,
+        message: "No player data found. Authentication may have failed or the HTML structure may have changed.",
+        timestamp: new Date().toISOString()
       });
-    });
+    } else {
+      console.log(`Successfully found ${allPlayerData.length} players from ${teamCount} teams`);
+    }
     
     // Sort players alphabetically by team and then by name
     allPlayerData.sort((a, b) => {
