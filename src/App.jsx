@@ -15,6 +15,102 @@ const formatName = (fullName) => {
   
   return `${firstName} ${lastNameInitial}.`;
 };
+// info pop up
+const [showInfoPopup, setShowInfoPopup] = useState(false);
+
+// SVG Icon Components
+const LightbulbIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-yellow-400">
+    <path d="M9 18h6"></path>
+    <path d="M10 22h4"></path>
+    <path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8A6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"></path>
+  </svg>
+);
+
+const CloseIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="18" y1="6" x2="6" y2="18"></line>
+    <line x1="6" y1="6" x2="18" y2="18"></line>
+  </svg>
+);
+
+// Floating info button that always stays in the top-right corner
+const FloatingInfoButton = ({ onClick }) => (
+  <button 
+    className="fixed top-4 right-4 z-40 p-3 bg-gray-700 hover:bg-gray-600 rounded-full shadow-lg transition-colors duration-200"
+    onClick={onClick}
+    aria-label="Show Information"
+  >
+    <LightbulbIcon />
+  </button>
+);
+
+// Info Popup Component
+const InfoPopup = ({ isOpen, onClose }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50" onClick={onClose}>
+      <div className="bg-gray-800 p-6 rounded-lg max-w-3xl max-h-[80vh] overflow-y-auto m-4" onClick={(e) => e.stopPropagation()}>
+        <div className="flex justify-between items-start mb-4">
+          <h2 className="text-xl font-semibold text-white">How Win Probabilities and Optimal Matchups Are Calculated</h2>
+          <button className="text-gray-400 hover:text-white" onClick={onClose}>
+            <CloseIcon />
+          </button>
+        </div>
+        
+        <p className="mb-4 text-gray-300">The Pool Team Stats Analyzer uses advanced algorithms to both calculate individual matchup probabilities and determine the optimal overall lineup strategy.</p>
+        
+        <h3 className="text-lg font-medium mb-2 text-white">Individual Matchup Probability Factors</h3>
+        <ol className="list-decimal list-inside mb-4 pl-2 text-gray-300">
+          <li className="mb-1"><span className="font-medium">Base Win Percentages:</span> Each player's overall win percentage serves as the foundation (30% weight)</li>
+          <li className="mb-1"><span className="font-medium">Head-to-Head History:</span> Direct matchup results between the specific players are heavily weighted:
+            <ul className="list-disc list-inside pl-6 mt-1">
+              <li>More previous matches = stronger influence (up to 50% weight)</li>
+              <li>Recent matches count more than older ones</li>
+            </ul>
+          </li>
+          <li className="mb-1"><span className="font-medium">Performance Against Similar Handicap Levels:</span> How well players perform against opponents of comparable skill levels:
+            <ul className="list-disc list-inside pl-6 mt-1">
+              <li>Tracks win rates against higher, equal, and lower handicapped players</li>
+              <li>Helps predict performance in matchups with specific opponent types</li>
+            </ul>
+          </li>
+        </ol>
+        
+        <h3 className="text-lg font-medium mb-2 text-white">Team Lineup Optimization (Hungarian Algorithm)</h3>
+        <p className="mb-2 text-gray-300">To determine the best possible combination of player matchups for your entire team, we implement the Hungarian Algorithm – a sophisticated mathematical approach used in assignment problems. Here's how it works:</p>
+        <ol className="list-decimal list-inside mb-4 pl-2 text-gray-300">
+          <li className="mb-1"><span className="font-medium">Cost Matrix Creation:</span> The system builds a matrix where:
+            <ul className="list-disc list-inside pl-6 mt-1">
+              <li>Each row represents one of your players</li>
+              <li>Each column represents an opponent</li>
+              <li>Each cell contains the "cost" (calculated as 1 minus the win probability)</li>
+            </ul>
+          </li>
+          <li className="mb-1"><span className="font-medium">Optimal Assignment:</span> The Hungarian Algorithm finds the combination of assignments that minimizes the total cost, effectively:
+            <ul className="list-disc list-inside pl-6 mt-1">
+              <li>Maximizing the team's overall win probability</li>
+              <li>Ensuring each player is matched against the opponent that creates the best team outcome</li>
+              <li>Finding the mathematically optimal solution among all possible combinations</li>
+            </ul>
+          </li>
+          <li className="mb-1"><span className="font-medium">Strategic Balance:</span> Rather than simply matching your best player against their best player, the algorithm may discover non-intuitive matchups that give your team the highest probability of overall success.</li>
+        </ol>
+        
+        <h3 className="text-lg font-medium mb-2 text-white">The Calculation Process</h3>
+        <p className="mb-2 text-gray-300">For each potential lineup configuration, the system:</p>
+        <ol className="list-decimal list-inside mb-4 pl-2 text-gray-300">
+          <li>Calculates individual win probabilities for all possible player combinations</li>
+          <li>Applies the Hungarian Algorithm to find the globally optimal set of matchups</li>
+          <li>Recommends the lineup with the highest mathematical probability of team success</li>
+        </ol>
+        
+        <p className="mb-0 italic text-gray-300">This sophisticated approach goes far beyond simple one-to-one matchup analysis, giving your team a significant strategic advantage based on historical performance data and advanced mathematical optimization.</p>
+      </div>
+    </div>
+  );
+};
 
 // Enhanced SearchableDropdown with minimum character requirement
 function SearchableDropdown({ options, value, onChange, placeholder, minChars = 2 }) {
@@ -1113,66 +1209,11 @@ const calculateWinProbability = (player1, player2) => {
   if (currentStep === "team-selection") {
     return (
       <div className="container mx-auto p-4">
+      <FloatingInfoButton onClick={() => setShowInfoPopup(true)} />
+      <InfoPopup isOpen={showInfoPopup} onClose={() => setShowInfoPopup(false)} />
         <h1 className="text-3xl font-bold mb-6 text-center">
           Pool Team Stats Analyzer
         </h1>
-        
-      <div className="text-sm text-gray-500 mb-4">
-        Found {teams.length} teams and {teamStats.length} players
-      </div>
-      
-      <div className="bg-gray-800 p-6 rounded-lg mb-8 text-gray-300 text-sm">
-        <h2 className="text-xl font-semibold mb-3 text-white">How Win Probabilities and Optimal Matchups Are Calculated</h2>
-        <p className="mb-4">The Pool Team Stats Analyzer uses advanced algorithms to both calculate individual matchup probabilities and determine the optimal overall lineup strategy.</p>
-        
-        <h3 className="text-lg font-medium mb-2 text-white">Individual Matchup Probability Factors</h3>
-        <ol className="list-decimal list-inside mb-4 pl-2">
-          <li className="mb-1"><span className="font-medium">Base Win Percentages:</span> Each player's overall win percentage serves as the foundation (30% weight)</li>
-          <li className="mb-1"><span className="font-medium">Head-to-Head History:</span> Direct matchup results between the specific players are heavily weighted:
-            <ul className="list-disc list-inside pl-6 mt-1">
-              <li>More previous matches = stronger influence (up to 50% weight)</li>
-              <li>Recent matches count more than older ones</li>
-            </ul>
-          </li>
-          <li className="mb-1"><span className="font-medium">Performance Against Similar Handicap Levels:</span> How well players perform against opponents of comparable skill levels:
-            <ul className="list-disc list-inside pl-6 mt-1">
-              <li>Tracks win rates against higher, equal, and lower handicapped players</li>
-              <li>Helps predict performance in matchups with specific opponent types</li>
-            </ul>
-          </li>
-        </ol>
-        <h3 className="text-lg font-medium mb-2 text-white">Team Lineup Optimization (Hungarian Algorithm)</h3>
-        <p className="mb-2">To determine the best possible combination of player matchups for your entire team, we implement the Hungarian Algorithm – a sophisticated mathematical approach used in assignment problems. Here's how it works:</p>
-        <ol className="list-decimal list-inside mb-4 pl-2">
-          <li className="mb-1"><span className="font-medium">Cost Matrix Creation:</span> The system builds a matrix where:
-            <ul className="list-disc list-inside pl-6 mt-1">
-              <li>Each row represents one of your players</li>
-              <li>Each column represents an opponent</li>
-              <li>Each cell contains the "cost" (calculated as 1 minus the win probability)</li>
-            </ul>
-          </li>
-          <li className="mb-1"><span className="font-medium">Optimal Assignment:</span> The Hungarian Algorithm finds the combination of assignments that minimizes the total cost, effectively:
-            <ul className="list-disc list-inside pl-6 mt-1">
-              <li>Maximizing the team's overall win probability</li>
-              <li>Ensuring each player is matched against the opponent that creates the best team outcome</li>
-              <li>Finding the mathematically optimal solution among all possible combinations</li>
-            </ul>
-          </li>
-          <li className="mb-1"><span className="font-medium">Strategic Balance:</span> Rather than simply matching your best player against their best player, the algorithm may discover non-intuitive matchups that give your team the highest probability of overall success.</li>
-        </ol>
-        
-        <h3 className="text-lg font-medium mb-2 text-white">The Calculation Process</h3>
-        <p className="mb-2">For each potential lineup configuration, the system:</p>
-        <ol className="list-decimal list-inside mb-4 pl-2">
-          <li>Calculates individual win probabilities for all possible player combinations</li>
-          <li>Applies the Hungarian Algorithm to find the globally optimal set of matchups</li>
-          <li>Recommends the lineup with the highest mathematical probability of team success</li>
-        </ol>
-        
-        <p className="mb-0 italic">This sophisticated approach goes far beyond simple one-to-one matchup analysis, giving your team a significant strategic advantage based on historical performance data and advanced mathematical optimization.</p>
-      </div>
-
-        
         <div className="text-xs text-gray-500 mb-4">
           Found {teams.length} teams and {teamStats.length} players
         </div>
