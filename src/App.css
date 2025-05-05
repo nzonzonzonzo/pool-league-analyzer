@@ -291,6 +291,14 @@ tr:hover td {
 
 /* CSS Variable Usage in Class Names */
 
+.inset-0 { top: 0; right: 0; bottom: 0; left: 0; }
+.bg-opacity-50 { --tw-bg-opacity: 0.5; }
+.z-50 { z-index: 50; }
+.bg-gray-800 { background-color: #1a1a1a; } /* Adjusted for your dark theme */
+.max-w-3xl { max-width: 48rem; }
+.max-h-\[80vh\] { max-height: 80vh; }
+.m-4 { margin: 1rem; }
+
 .fixed { position: fixed; }
 .top-4 { top: 1rem; }
 .right-4 { right: 1rem; }

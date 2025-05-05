@@ -20,8 +20,8 @@ const formatName = (fullName) => {
 const LightbulbIcon = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
-    width="12"
-    height="12"
+    width="18"
+    height="18"
     viewBox="0 0 24 24"
     fill="none"
     stroke="#bdc1c6"
@@ -38,8 +38,8 @@ const LightbulbIcon = () => (
 const CloseIcon = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
-    width="12"
-    height="12"
+    width="18"
+    height="18"
     viewBox="0 0 24 24"
     fill="none"
     stroke="#bdc1c6"
@@ -72,7 +72,7 @@ const InfoPopup = ({ isOpen, onClose }) => {
       <div className="bg-gray-800 p-6 rounded-lg max-w-3xl max-h-[80vh] overflow-y-auto m-4" onClick={(e) => e.stopPropagation()}>
         <div className="flex justify-between items-start mb-4">
           <h2 className="text-xl font-semibold text-white">How Win Probabilities and Optimal Matchups Are Calculated</h2>
-          <button className="text-gray-400 hover:text-white" onClick={onClose}>
+          <button className="bg-transparent hover:opacity-80 transition-opacity duration-200" onClick={onClose}>
             <CloseIcon />
           </button>
         </div>
