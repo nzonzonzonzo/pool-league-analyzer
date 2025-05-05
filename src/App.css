@@ -290,6 +290,17 @@ tr:hover td {
 }
 
 /* CSS Variable Usage in Class Names */
+
+.fixed { position: fixed; }
+.top-4 { top: 1rem; }
+.right-4 { right: 1rem; }
+.z-40 { z-index: 40; }
+.p-0 { padding: 0; }
+.bg-transparent { background-color: transparent; }
+.hover\:opacity-80:hover { opacity: 0.8; }
+.transition-opacity { transition: opacity 0.2s; }
+.duration-200 { transition-duration: 0.2s; }
+
 .text-primary { color: var(--primary); }
 .text-primary-dark { color: var(--primary-dark); }
 .text-primary-light { color: var(--primary-light); }
