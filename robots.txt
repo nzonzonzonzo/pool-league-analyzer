@@ -1,0 +1,14 @@
+User-agent: *
+# Disallow specific data files with player information
+Disallow: /data/all_matches.json
+Disallow: /data/team_stats.json
+Disallow: /data/
+
+# Disallow any directory that might contain player data
+Disallow: /assets/data/
+Disallow: /src/data/
+Disallow: /public/data/
+
+# Discourage indexing the entire site if you prefer
+# Comment out the line below if you want the main app to be discoverable
+# Disallow: /
