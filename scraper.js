@@ -18,9 +18,12 @@ async function scrapeAndUpdateStats(jsonFilePath = 'public/data/team_stats.json'
   try {
     console.log('Starting scraper...');
     // Fetch the page content with the authentication cookie
+    console.log('Fetching page with cookie (first 15 chars): ' + authCookie.substring(0, 15) + '...');
+    
     const response = await axios.get('https://leagues2.amsterdambilliards.com/8ball/abc/individual_standings.php?foo=bar', {
       headers: {
-        'Cookie': authCookie
+        'Cookie': authCookie,
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
       }
     });
     
@@ -30,12 +33,17 @@ async function scrapeAndUpdateStats(jsonFilePath = 'public/data/team_stats.json'
     
     // Save the raw HTML for debugging (only in development)
     if (process.env.NODE_ENV === 'development') {
+      // Create debug directory if it doesn't exist
+      if (!fs.existsSync('debug')) {
+        fs.mkdirSync('debug', { recursive: true });
+      }
+      
       fs.writeFileSync('debug/html.txt', response.data);
       console.log('Saved raw HTML to debug/html.txt for inspection');
       
-      // Also save some sample team tables to debug folders
-      const sampleTeam = $('table.tableteir2').eq(5).html();
-      fs.writeFileSync('debug/sample_team.html', sampleTeam || 'No team found');
+      // Log title to see what page we're on
+      const pageTitle = $('title').text();
+      console.log(`Page title: "${pageTitle}"`);
       
       // Check if login form exists (indicating authentication failed)
       const loginForm = $('form[name="login"]').length;
@@ -43,38 +51,102 @@ async function scrapeAndUpdateStats(jsonFilePath = 'public/data/team_stats.json'
         console.error('ERROR: Login form detected - authentication failed or cookie expired');
         fs.writeFileSync('debug/login_detected.txt', 'Authentication failed - cookie might be expired');
       }
+      
+      // Save HTML structure for debugging
+      let htmlStructure = '';
+      $('table').each((i, el) => {
+        htmlStructure += `Table #${i}: class="${$(el).attr('class')}" width="${$(el).attr('width')}"\n`;
+      });
+      fs.writeFileSync('debug/html_structure.txt', htmlStructure);
     }
     
     // Log the length of the HTML to verify we got a proper response
     console.log(`Fetched HTML content (${response.data.length} bytes)`);
     
     // Check if we can find the expected elements
-    const dataLevelRows = $('td.data_level_1_nobg').length;
+    const teamNameElements = $('td.data_level_1_nobg b i').length;
     const teamTables = $('table.tableteir2').length;
-    console.log(`Found ${dataLevelRows} team name rows and ${teamTables} team tables`);
+    console.log(`Found ${teamNameElements} team name elements and ${teamTables} team tables`);
     
     // Initialize an array to hold all player data
     const allPlayerData = [];
+    const allPlayerData = [];
     
-    // Find all team names - they appear in table rows with the class 'data_level_1_nobg'
-    $('table.tableteir2 tr td.data_level_1_nobg').each(function() {
-      // Get the team name which is wrapped in <b><i> tags
-      const teamNameElement = $(this).find('b i');
-      if (teamNameElement.length === 0) return;
+    // Try a completely different selector approach based on the HTML structure
+    let teamCount = 0;
+    let playerCount = 0;
+    
+    // Find divisions first (they have a specific bgcolor)
+    $('tr[bgcolor="#FF6500"], tr[bgcolor="#000080"], tr[bgcolor="#551A8B"], tr[bgcolor="#CD2626"], tr[bgcolor="#006400"], tr[bgcolor="#CC9900"]').each(function() {
+      const divisionName = $(this).find('h3').text().trim();
+      console.log(`Found division: ${divisionName}`);
       
-      const teamName = teamNameElement.text().trim();
-      console.log('Processing team: ' + teamName);
+      // Get the tables after this division header
+      let currentElement = $(this).next();
       
-      // The team table is the next table after this row's parent table
-      const teamTable = $(this).closest('table').next('table');
-      
-      // Find player rows within the team table - exclude header (first 2) and totals (last) rows
-      const playerRows = teamTable.find('tr').not(':first-child').not(':nth-child(2)').not(':last-child');
-      
-      // Log number of player rows found
-      console.log(`  Found ${playerRows.length} player rows for team ${teamName}`);
-      
-      playerRows.each(function() {
+      while(currentElement.length && !currentElement.is('tr[bgcolor]')) {
+        // Check if this contains a team name
+        if (currentElement.find('td.data_level_1_nobg').length > 0) {
+          const teamNameRow = currentElement;
+          const teamName = teamNameRow.find('b i').text().trim();
+          if (teamName) {
+            teamCount++;
+            console.log(`  Found team ${teamCount}: ${teamName}`);
+            
+            // The player table should be the next element
+            const playerTable = teamNameRow.next('table');
+            
+            if (playerTable.length) {
+              // Find player rows - skip headers and total
+              const playerRows = playerTable.find('tr:not(:first-child):not(:nth-child(2)):not(:last-child)');
+              
+              playerRows.each(function() {
+                const cells = $(this).find('td');
+                if (cells.length < 5) return; // Skip rows without enough cells
+                
+                // Check if it's a totals row
+                if ($(cells[0]).text().trim().includes('Totals')) return;
+                
+                playerCount++;
+                
+                // Extract player data
+                const name = $(cells[1]).text().trim();
+                const handicap = parseInt($(cells[2]).text().trim(), 10) || 0;
+                const wins = parseInt($(cells[5]).text().trim(), 10) || 0;
+                const losses = parseInt($(cells[6]).text().trim(), 10) || 0;
+                const total = parseInt($(cells[7]).text().trim(), 10) || 0;
+                
+                // Calculate win percentage
+                const winPercentage = total > 0 ? ((wins / total) * 100).toFixed(1) + '%' : '0.0%';
+                
+                // Add player data to the array
+                allPlayerData.push({
+                  team: teamName,
+                  name,
+                  handicap,
+                  wins,
+                  losses,
+                  total,
+                  winPercentage
+                });
+                
+                if (playerCount % 10 === 0) {
+                  console.log(`    Processed ${playerCount} players so far...`);
+                }
+              });
+            } else {
+              console.log(`    Error: Could not find player table for team ${teamName}`);
+            }
+          }
+        }
+        
+        currentElement = currentElement.next();
+      }
+    });
+    
+    console.log(`Total players found: ${playerCount}`);
+    
+    // Skip our previous approach entirely as it wasn't working
         // Skip totals row which has class "level_4"
         if ($(this).find('td.level_4').length > 0) return;
         
