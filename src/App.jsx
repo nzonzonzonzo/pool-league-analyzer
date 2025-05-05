@@ -1141,7 +1141,37 @@ const calculateWinProbability = (player1, player2) => {
             </ul>
           </li>
         </ol>
-        </div>
+        <h3 className="text-lg font-medium mb-2 text-white">Team Lineup Optimization (Hungarian Algorithm)</h3>
+        <p className="mb-2">To determine the best possible combination of player matchups for your entire team, we implement the Hungarian Algorithm – a sophisticated mathematical approach used in assignment problems. Here's how it works:</p>
+        <ol className="list-decimal list-inside mb-4 pl-2">
+          <li className="mb-1"><span className="font-medium">Cost Matrix Creation:</span> The system builds a matrix where:
+            <ul className="list-disc list-inside pl-6 mt-1">
+              <li>Each row represents one of your players</li>
+              <li>Each column represents an opponent</li>
+              <li>Each cell contains the "cost" (calculated as 1 minus the win probability)</li>
+            </ul>
+          </li>
+          <li className="mb-1"><span className="font-medium">Optimal Assignment:</span> The Hungarian Algorithm finds the combination of assignments that minimizes the total cost, effectively:
+            <ul className="list-disc list-inside pl-6 mt-1">
+              <li>Maximizing the team's overall win probability</li>
+              <li>Ensuring each player is matched against the opponent that creates the best team outcome</li>
+              <li>Finding the mathematically optimal solution among all possible combinations</li>
+            </ul>
+          </li>
+          <li className="mb-1"><span className="font-medium">Strategic Balance:</span> Rather than simply matching your best player against their best player, the algorithm may discover non-intuitive matchups that give your team the highest probability of overall success.</li>
+        </ol>
+        
+        <h3 className="text-lg font-medium mb-2 text-white">The Calculation Process</h3>
+        <p className="mb-2">For each potential lineup configuration, the system:</p>
+        <ol className="list-decimal list-inside mb-4 pl-2">
+          <li>Calculates individual win probabilities for all possible player combinations</li>
+          <li>Applies the Hungarian Algorithm to find the globally optimal set of matchups</li>
+          <li>Recommends the lineup with the highest mathematical probability of team success</li>
+        </ol>
+        
+        <p className="mb-0 italic">This sophisticated approach goes far beyond simple one-to-one matchup analysis, giving your team a significant strategic advantage based on historical performance data and advanced mathematical optimization.</p>
+      </div>
+
         
         <div className="text-xs text-gray-500 mb-4">
           Found {teams.length} teams and {teamStats.length} players
