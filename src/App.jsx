@@ -1383,7 +1383,7 @@ const calculateWinProbability = (player1, player2) => {
         <div className="mb-8">
           <h2 className="text-xl font-semibold mb-4">Ideal Matchups</h2>
           <p className="mb-4">
-            Assuming the opponent team selects their best players, here are the optimal matchups:
+            Based on the available players, here are the optimal matchups:
           </p>
 
           <div className="overflow-x-auto mb-6">
