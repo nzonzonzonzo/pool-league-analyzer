@@ -15,8 +15,6 @@ const formatName = (fullName) => {
   
   return `${firstName} ${lastNameInitial}.`;
 };
-// info pop up
-const [showInfoPopup, setShowInfoPopup] = useState(false);
 
 // SVG Icon Components
 const LightbulbIcon = () => (
@@ -578,6 +576,9 @@ function findOptimalAssignment(matrix) {
 }
 
 function App() {
+  // info pop up
+  const [showInfoPopup, setShowInfoPopup] = useState(false);
+
   // Data states
   const [allMatches, setAllMatches] = useState([]);
   const [teamStats, setTeamStats] = useState([]);
