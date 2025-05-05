@@ -3,6 +3,19 @@ import "./App.css";
 
 const USE_HUNGARIAN_ALGORITHM = true; // Set to true when you want to test the new algorithm
 
+// Add the name formatting utility at the top of the file
+const formatName = (fullName) => {
+  if (!fullName || typeof fullName !== 'string') return fullName;
+  
+  const nameParts = fullName.split(' ');
+  if (nameParts.length <= 1) return fullName;
+  
+  const firstName = nameParts.slice(0, nameParts.length - 1).join(' ');
+  const lastNameInitial = nameParts[nameParts.length - 1][0];
+  
+  return `${firstName} ${lastNameInitial}.`;
+};
+
 // Enhanced SearchableDropdown with minimum character requirement
 function SearchableDropdown({ options, value, onChange, placeholder, minChars = 2 }) {
   const [searchTerm, setSearchTerm] = useState('');
@@ -516,7 +529,14 @@ function App() {
         const validMatches = matchesData.filter((match) => !match.forfeit);
 
         setAllMatches(validMatches);
-        setTeamStats(statsData);
+        
+        // Transform the statsData to add displayName field
+        const transformedStatsData = statsData.map(player => ({
+          ...player,
+          displayName: formatName(player.name)
+        }));
+        
+        setTeamStats(transformedStatsData);
 
         // Extract unique team names from the team stats data
         const uniqueTeams = [
@@ -1130,7 +1150,7 @@ function App() {
                       className="p-3 mb-2 rounded-lg border hover:bg-blue-50 transition-all"
                     >
                       <div className="flex justify-between items-center">
-                        <span className="font-medium">{player.name}</span>
+                        <span className="font-medium">{player.displayName}</span>
                         <span className="text-sm py-1 px-2 pr-3 rounded-full text-primary-dark">
                           HCP: {player.handicap}
                         </span>
@@ -1188,7 +1208,7 @@ function App() {
                       className="p-3 mb-2 rounded-lg border hover:bg-blue-50 transition-all"
                     >
                       <div className="flex justify-between items-center">
-                        <span className="font-medium">{player.name}</span>
+                        <span className="font-medium">{player.displayName}</span>
                         <span className="text-sm py-1 px-2 pr-3 rounded-full text-primary-dark">
                           HCP: {player.handicap}
                         </span>
@@ -1261,8 +1281,8 @@ function App() {
               <tbody>
                 {optimalMatchups.map((matchup, index) => (
                   <tr key={`matchup-${index}`} className="border-t">
-                    <td className="p-2">{matchup.homePlayer.name}</td>
-                    <td className="p-2">{matchup.awayPlayer.name}</td>
+                    <td className="p-2">{matchup.homePlayer.displayName}</td>
+                    <td className="p-2">{matchup.awayPlayer.displayName}</td>
                     <td className="p-2">
                       <div className="flex items-center">
                         <div className="w-24 h-4 bg-gray-200 rounded-full overflow-hidden mr-2">
@@ -1383,7 +1403,7 @@ function App() {
                     }
                   }}
                 >
-                  <div className="font-medium">{player.name}</div>
+                  <div className="font-medium">{player.displayName}</div>
                   <div className="text-sm text-gray-600">
                     HCP: {player.handicap}
                   </div>
@@ -1394,7 +1414,7 @@ function App() {
                     {availableHomePlayers.length > 0 && (
                       <div className="text-sm mt-1">
                         {getBestPlayerAgainst(availableHomePlayers, player)
-                          ?.player.name || "N/A"}
+                          ?.player.displayName || "N/A"}
                         (
                         {Math.round(
                           (getBestPlayerAgainst(availableHomePlayers, player)
@@ -1442,7 +1462,7 @@ function App() {
             <p className="mb-4">
               Recommended player:{" "}
               <span className="font-bold">
-                {bestBlindPlayer?.name || "N/A"}
+                {bestBlindPlayer?.displayName || "N/A"}
               </span>
             </p>
             <p className="text-sm mb-6">
@@ -1472,7 +1492,7 @@ function App() {
                       selectPlayerForGame("game1", "home", player);
                     }}
                   >
-                    <div className="font-medium">{player.name}</div>
+                    <div className="font-medium">{player.displayName}</div>
                     <div className="text-sm text-gray-600">
                       HCP: {player.handicap}
                     </div>
@@ -1533,7 +1553,7 @@ function App() {
             <p className="mb-4">
               Recommended player:{" "}
               <span className="font-bold">
-                {bestBlindPlayer?.name || "N/A"}
+                {bestBlindPlayer?.displayName || "N/A"}
               </span>
             </p>
             <p className="text-sm mb-6">
@@ -1594,7 +1614,7 @@ function App() {
                       }
                     }}
                   >
-                    <div className="font-medium">{player.name}</div>
+                    <div className="font-medium">{player.displayName}</div>
                     <div className="text-sm text-gray-600">
                       HCP: {player.handicap}
                     </div>
@@ -1662,7 +1682,7 @@ function App() {
                     }
                   }}
                 >
-                  <div className="font-medium">{player.name}</div>
+                  <div className="font-medium">{player.displayName}</div>
                   <div className="text-sm text-gray-600">
                     HCP: {player.handicap}
                   </div>
@@ -1673,7 +1693,7 @@ function App() {
                     {availableHomePlayers.length > 0 && (
                       <div className="text-sm mt-1">
                         {getBestPlayerAgainst(availableHomePlayers, player)
-                          ?.player.name || "N/A"}
+                          ?.player.displayName || "N/A"}
                         (
                         {Math.round(
                           (getBestPlayerAgainst(availableHomePlayers, player)
@@ -1745,7 +1765,7 @@ function App() {
                     }
                   }}
                 >
-                  <div className="font-medium">{player.name}</div>
+                  <div className="font-medium">{player.displayName}</div>
                   <div className="text-sm text-gray-600">
                     HCP: {player.handicap}
                   </div>
@@ -1756,7 +1776,7 @@ function App() {
                     {availableHomePlayers.length > 0 && (
                       <div className="text-sm mt-1">
                         {getBestPlayerAgainst(availableHomePlayers, player)
-                          ?.player.name || "N/A"}
+                          ?.player.displayName || "N/A"}
                         (
                         {Math.round(
                           (getBestPlayerAgainst(availableHomePlayers, player)
@@ -1802,7 +1822,7 @@ function App() {
             <p className="mb-4">
               Recommended player:{" "}
               <span className="font-bold">
-                {bestBlindPlayer?.name || "N/A"}
+                {bestBlindPlayer?.displayName || "N/A"}
               </span>
             </p>
             <p className="text-sm mb-6">
@@ -1832,7 +1852,7 @@ function App() {
                       selectPlayerForGame("game3", "home", player);
                     }}
                   >
-                    <div className="font-medium">{player.name}</div>
+                    <div className="font-medium">{player.displayName}</div>
                     <div className="text-sm text-gray-600">
                       HCP: {player.handicap}
                     </div>
@@ -1868,7 +1888,6 @@ function App() {
       );
     }
   }
-
   // Render Game 4 selection
   if (currentStep === "game-4") {
     if (wonCoinFlip) {
@@ -1892,7 +1911,7 @@ function App() {
             <p className="mb-4">
               Recommended player:{" "}
               <span className="font-bold">
-                {bestBlindPlayer?.name || "N/A"}
+                {bestBlindPlayer?.displayName || "N/A"}
               </span>
             </p>
             <p className="text-sm mb-6">This is your last player selection.</p>
@@ -1950,7 +1969,7 @@ function App() {
                       }
                     }}
                   >
-                    <div className="font-medium">{player.name}</div>
+                    <div className="font-medium">{player.displayName}</div>
                     <div className="text-sm text-gray-600">
                       HCP: {player.handicap}
                     </div>
@@ -2018,7 +2037,7 @@ function App() {
                     }
                   }}
                 >
-                  <div className="font-medium">{player.name}</div>
+                  <div className="font-medium">{player.displayName}</div>
                   <div className="text-sm text-gray-600">
                     HCP: {player.handicap}
                   </div>
@@ -2029,7 +2048,7 @@ function App() {
                     {availableHomePlayers.length > 0 && (
                       <div className="text-sm mt-1">
                         {getBestPlayerAgainst(availableHomePlayers, player)
-                          ?.player.name || "N/A"}
+                          ?.player.displayName || "N/A"}
                         (
                         {Math.round(
                           (getBestPlayerAgainst(availableHomePlayers, player)
@@ -2133,8 +2152,8 @@ function App() {
                   return (
                     <tr key={`summary-${game}`} className="border-t">
                       <td className="p-2">Game {gameNum}</td>
-                      <td className="p-2">{matchup.home.name}</td>
-                      <td className="p-2">{matchup.away.name}</td>
+                      <td className="p-2">{matchup.home.displayName}</td>
+                      <td className="p-2">{matchup.away.displayName}</td>
                       <td className="p-2">
                         <div className="flex items-center">
                           <div className="w-24 h-4 bg-gray-200 rounded-full overflow-hidden mr-2">
