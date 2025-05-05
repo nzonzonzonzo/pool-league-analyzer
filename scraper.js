@@ -10,15 +10,21 @@ const fs = require('fs');
  * @param {string} authCookie - Authentication cookie for accessing the protected page
  * @returns {Promise<object>} - The updated stats data
  */
-async function scrapeAndUpdateStats(jsonFilePath = 'team_stats.json', authCookie = 'T8UID=qJy9wAvA%2B3sZ08JkrfHGxA%3D%3D') {
+async function scrapeAndUpdateStats(jsonFilePath = 'public/data/team_stats.json', authCookie) {
+  if (!authCookie) {
+    throw new Error('Authentication cookie is required');
+  }
+
   try {
+    console.log('Starting scraper...');
     // Fetch the page content with the authentication cookie
     const response = await axios.get('https://leagues2.amsterdambilliards.com/8ball/abc/individual_standings.php?foo=bar', {
       headers: {
         'Cookie': authCookie
       }
     });
-
+    
+    console.log('Page fetched successfully, parsing data...');
     // Load the HTML into cheerio
     const $ = cheerio.load(response.data);
     
@@ -32,6 +38,7 @@ async function scrapeAndUpdateStats(jsonFilePath = 'team_stats.json', authCookie
       if (teamNameElement.length === 0) return;
       
       const teamName = teamNameElement.text().trim();
+      console.log('Processing team: ' + teamName);
       
       // Find player rows within the team table
       const playerRows = $(this).next('table').find('tr:not(:first-child):not(:last-child)');
@@ -75,8 +82,14 @@ async function scrapeAndUpdateStats(jsonFilePath = 'team_stats.json', authCookie
     
     // Save the data to a JSON file if a path is provided
     if (jsonFilePath) {
+      // Ensure directory exists
+      const dir = jsonFilePath.split('/').slice(0, -1).join('/');
+      if (dir && !fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      
       fs.writeFileSync(jsonFilePath, JSON.stringify(allPlayerData, null, 2));
-      console.log(`Data successfully written to ${jsonFilePath}`);
+      console.log(`Data successfully written to ${jsonFilePath} with ${allPlayerData.length} player records`);
     }
     
     return allPlayerData;
@@ -88,6 +101,3 @@ async function scrapeAndUpdateStats(jsonFilePath = 'team_stats.json', authCookie
 
 // For Node.js usage
 module.exports = { scrapeAndUpdateStats };
-
-// Example usage:
-// scrapeAndUpdateStats().then(data => console.log(`Scraped ${data.length} player records`));
