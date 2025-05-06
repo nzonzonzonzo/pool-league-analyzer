@@ -1110,24 +1110,6 @@ const calculateWinProbability = (player1, player2) => {
   };
 
   // Function to choose player for a game
-  const selectPlayerForGame = (game, team, player) => {
-    console.log(`Selecting ${team} player for ${game}:`, player.name);
-
-    // Update selected players
-    setSelectedPlayers((prev) => {
-      const updated = {
-        ...prev,
-        [game]: {
-          ...prev[game],
-          [team]: player,
-        },
-      };
-
-      console.log(`Updated players for ${game}:`, updated[game]);
-      return updated;
-    });
-
-    // Remove player from available list
     const selectPlayerForGame = (game, team, player) => {
   console.log(`Selecting ${team} player for ${game}:`, player.name);
 
