@@ -1685,7 +1685,8 @@ const renderOpponentSelectionScreen = (gameNumber) => {
                   // Select this player as the opponent
                   handleOpponentSelection(game, player);
                   
-                  // Move to next game
+                  // Move to next 
+                  if (gameNumber === 4) {
                     console.log("Moving to summary after Game 4 opponent selection");
                     setCurrentStep("summary");
                   } else {
