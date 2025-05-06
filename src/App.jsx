@@ -1728,10 +1728,10 @@ const selectPlayerForGame = (game, team, player) => {
           </button>
         </div>
       </div>
+      </div>
     );
   };
-</div>
-)
+
   // Render Game 2 selection
   if (currentStep === "game-2") {
     if (wonCoinFlip) {
