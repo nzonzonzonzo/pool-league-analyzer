@@ -1110,7 +1110,7 @@ const calculateWinProbability = (player1, player2) => {
   };
 
   // Function to choose player for a game
-    const selectPlayerForGame = (game, team, player) => {
+const selectPlayerForGame = (game, team, player) => {
   console.log(`Selecting ${team} player for ${game}:`, player.name);
 
   // Update selected players
@@ -1132,42 +1132,31 @@ const calculateWinProbability = (player1, player2) => {
     setAvailableHomePlayers((prev) =>
       prev.filter((p) => p.name !== player.name),
     );
-
-    // Special case for game-1 when we lost coin flip
-    // Instead of auto-selecting opponent, go to game-1-opponent step
+    
+    // Special cases for blind selections - redirect to opponent selection screens
+    // Game 1 when lost coin flip
     if (!wonCoinFlip && game === "game1") {
+      console.log("Moving to game-1-opponent");
       setCurrentStep("game-1-opponent");
-      return; // Return early to prevent further execution
+      return;
     }
-
-    // The rest of the original function stays the same below this point
-    // If we're selecting a home player and this is a blind pick (Games 1 & 3 when we lost coin flip),
-    // automatically select the best opponent for this game
-    const gameNumber = parseInt(game.replace("game", ""));
-    if (
-      !wonCoinFlip &&
-      (gameNumber === 1 || gameNumber === 3) &&
-      availableAwayPlayers.length > 0
-    ) {
-      // Find the best opponent against our player (for opponent, higher win prob is better)
-      const bestOpponent = availableAwayPlayers.reduce((best, current) => {
-        const currentProb =
-          1 - calculateWinProbability(player.name, current.name);
-        const bestProb = best
-          ? 1 - calculateWinProbability(player.name, best.name)
-          : 0;
-
-        return currentProb > bestProb ? current : best;
-      }, null);
-
-      if (bestOpponent) {
-        console.log(
-          `Auto-selecting opponent for ${game}:`,
-          bestOpponent.name,
-        );
-        // Auto-select this opponent
-        handleOpponentSelection(game, bestOpponent);
-      }
+    // Game 3 when lost coin flip
+    if (!wonCoinFlip && game === "game3") {
+      console.log("Moving to game-3-opponent");
+      setCurrentStep("game-3-opponent");
+      return;
+    }
+    // Game 2 when won coin flip
+    if (wonCoinFlip && game === "game2") {
+      console.log("Moving to game-2-opponent");
+      setCurrentStep("game-2-opponent");
+      return;
+    }
+    // Game 4 when won coin flip
+    if (wonCoinFlip && game === "game4") {
+      console.log("Moving to game-4-opponent");
+      setCurrentStep("game-4-opponent");
+      return;
     }
   } else {
     setAvailableAwayPlayers((prev) =>
@@ -1175,11 +1164,13 @@ const calculateWinProbability = (player1, player2) => {
     );
   }
 
-  // Move to next step
+  // Move to next step for all other cases
   const gameNumber = parseInt(game.replace("game", ""));
   if (gameNumber < 4) {
+    console.log(`Moving to game-${gameNumber + 1}`);
     setCurrentStep(`game-${gameNumber + 1}`);
   } else {
+    console.log("Moving to summary");
     setCurrentStep("summary");
   }
 };
