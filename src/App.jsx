@@ -1731,7 +1731,7 @@ const selectPlayerForGame = (game, team, player) => {
     );
   };
 </div>
-
+)
   // Render Game 2 selection
   if (currentStep === "game-2") {
     if (wonCoinFlip) {
