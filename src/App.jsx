@@ -1686,8 +1686,12 @@ const renderOpponentSelectionScreen = (gameNumber) => {
                   handleOpponentSelection(game, player);
                   
                   // Move to next game
-                  const nextGameNumber = gameNumber < 4 ? gameNumber + 1 : 4;
-                  setCurrentStep(`game-${nextGameNumber}`);
+                    console.log("Moving to summary after Game 4 opponent selection");
+                    setCurrentStep("summary");
+                  } else {
+                    const nextGameNumber = gameNumber + 1;
+                    console.log(`Moving to game-${nextGameNumber}`);
+                    setCurrentStep(`game-${nextGameNumber}`);
                 }}
               >
                 <div className="font-medium">{player.displayName}</div>
