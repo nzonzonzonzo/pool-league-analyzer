@@ -1037,6 +1037,8 @@ const calculateWinProbability = (player1, player2) => {
     }
   };
 
+
+
   // Function to get best player for blind selection
   const getBestBlindPlayer = (availablePlayers, opponentTeamPlayers) => {
     if (availablePlayers.length === 0) return null;
@@ -1126,53 +1128,79 @@ const calculateWinProbability = (player1, player2) => {
     });
 
     // Remove player from available list
-    if (team === "home") {
-      setAvailableHomePlayers((prev) =>
-        prev.filter((p) => p.name !== player.name),
-      );
+    const selectPlayerForGame = (game, team, player) => {
+  console.log(`Selecting ${team} player for ${game}:`, player.name);
 
-      // If we're selecting a home player and this is a blind pick (Games 1 & 3 when we lost coin flip),
-      // automatically select the best opponent for this game
-      const gameNumber = parseInt(game.replace("game", ""));
-      if (
-        !wonCoinFlip &&
-        (gameNumber === 1 || gameNumber === 3) &&
-        availableAwayPlayers.length > 0
-      ) {
-        // Find the best opponent against our player (for opponent, higher win prob is better)
-        const bestOpponent = availableAwayPlayers.reduce((best, current) => {
-          const currentProb =
-            1 - calculateWinProbability(player.name, current.name);
-          const bestProb = best
-            ? 1 - calculateWinProbability(player.name, best.name)
-            : 0;
+  // Update selected players
+  setSelectedPlayers((prev) => {
+    const updated = {
+      ...prev,
+      [game]: {
+        ...prev[game],
+        [team]: player,
+      },
+    };
 
-          return currentProb > bestProb ? current : best;
-        }, null);
+    console.log(`Updated players for ${game}:`, updated[game]);
+    return updated;
+  });
 
-        if (bestOpponent) {
-          console.log(
-            `Auto-selecting opponent for ${game}:`,
-            bestOpponent.name,
-          );
-          // Auto-select this opponent
-          handleOpponentSelection(game, bestOpponent);
-        }
-      }
-    } else {
-      setAvailableAwayPlayers((prev) =>
-        prev.filter((p) => p.name !== player.name),
-      );
+  // Remove player from available list
+  if (team === "home") {
+    setAvailableHomePlayers((prev) =>
+      prev.filter((p) => p.name !== player.name),
+    );
+
+    // Special case for game-1 when we lost coin flip
+    // Instead of auto-selecting opponent, go to game-1-opponent step
+    if (!wonCoinFlip && game === "game1") {
+      setCurrentStep("game-1-opponent");
+      return; // Return early to prevent further execution
     }
 
-    // Move to next step
+    // The rest of the original function stays the same below this point
+    // If we're selecting a home player and this is a blind pick (Games 1 & 3 when we lost coin flip),
+    // automatically select the best opponent for this game
     const gameNumber = parseInt(game.replace("game", ""));
-    if (gameNumber < 4) {
-      setCurrentStep(`game-${gameNumber + 1}`);
-    } else {
-      setCurrentStep("summary");
+    if (
+      !wonCoinFlip &&
+      (gameNumber === 1 || gameNumber === 3) &&
+      availableAwayPlayers.length > 0
+    ) {
+      // Find the best opponent against our player (for opponent, higher win prob is better)
+      const bestOpponent = availableAwayPlayers.reduce((best, current) => {
+        const currentProb =
+          1 - calculateWinProbability(player.name, current.name);
+        const bestProb = best
+          ? 1 - calculateWinProbability(player.name, best.name)
+          : 0;
+
+        return currentProb > bestProb ? current : best;
+      }, null);
+
+      if (bestOpponent) {
+        console.log(
+          `Auto-selecting opponent for ${game}:`,
+          bestOpponent.name,
+        );
+        // Auto-select this opponent
+        handleOpponentSelection(game, bestOpponent);
+      }
     }
-  };
+  } else {
+    setAvailableAwayPlayers((prev) =>
+      prev.filter((p) => p.name !== player.name),
+    );
+  }
+
+  // Move to next step
+  const gameNumber = parseInt(game.replace("game", ""));
+  if (gameNumber < 4) {
+    setCurrentStep(`game-${gameNumber + 1}`);
+  } else {
+    setCurrentStep("summary");
+  }
+};
 
   // Handle opponent selection
   const handleOpponentSelection = (game, player) => {
@@ -1648,6 +1676,82 @@ const calculateWinProbability = (player1, player2) => {
       );
     }
   }
+
+  // Helper function to render the opponent selection screen for any game
+const renderOpponentSelectionScreen = (gameNumber) => {
+  const game = `game${gameNumber}`;
+  
+  return (
+    <div className="container mx-auto p-4">
+      <FloatingInfoButton onClick={() => setShowInfoPopup(true)} />
+      <InfoPopup isOpen={showInfoPopup} onClose={() => setShowInfoPopup(false)} />
+      <h1 className="text-3xl font-bold mb-6 text-center">
+        Pool Team Stats Analyzer
+      </h1>
+
+      <div className="bg-blue-50 p-6 rounded-lg mb-8">
+        <h2 className="text-xl font-semibold mb-4">Game {gameNumber} Opponent Selection</h2>
+        <p className="mb-4">
+          You've selected {selectedPlayers[game].home?.displayName} for Game {gameNumber}. 
+          Which player did the opponent choose?
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {availableAwayPlayers.map((player) => {
+            // Calculate win probability against our player
+            const winProb = calculateWinProbability(
+              selectedPlayers[game].home?.name,
+              player.name
+            );
+            
+            return (
+              <div
+                key={`opponent-player-${player.name}`}
+                className="p-4 border rounded-lg cursor-pointer hover:bg-blue-100"
+                onClick={() => {
+                  // Select this player as the opponent
+                  handleOpponentSelection(game, player);
+                  
+                  // Move to next game
+                  const nextGameNumber = gameNumber < 4 ? gameNumber + 1 : 4;
+                  setCurrentStep(`game-${nextGameNumber}`);
+                }}
+              >
+                <div className="font-medium">{player.displayName}</div>
+                <div className="text-sm text-gray-600">
+                  HCP: {player.handicap}
+                </div>
+                <div className="mt-2">
+                  <div className="text-sm">Win probability against them:</div>
+                  <div className="flex items-center mt-1">
+                    <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden mr-2">
+                      <div
+                        className="h-full bg-green-500"
+                        style={{ width: `${winProb * 100}%` }}
+                      ></div>
+                    </div>
+                    <span className="font-medium">
+                      {Math.round(winProb * 100)}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="flex justify-center">
+        <button
+          className="px-4 py-2 bg-gray-300 text-gray-800 rounded"
+          onClick={handleReset}
+        >
+          Start Over
+        </button>
+      </div>
+    </div>
+  );
+};
 
   // Render Game 2 selection
   if (currentStep === "game-2") {
@@ -2201,6 +2305,25 @@ const calculateWinProbability = (player1, player2) => {
       );
     }
   }
+  // Render Game 1 opponent selection
+if (currentStep === "game-1-opponent") {
+  return renderOpponentSelectionScreen(1);
+}
+
+// Render Game 2 opponent selection
+if (currentStep === "game-2-opponent") {
+  return renderOpponentSelectionScreen(2);
+}
+
+// Render Game 3 opponent selection
+if (currentStep === "game-3-opponent") {
+  return renderOpponentSelectionScreen(3);
+}
+
+// Render Game 4 opponent selection
+if (currentStep === "game-4-opponent") {
+  return renderOpponentSelectionScreen(4);
+}
 
   // Render summary
   if (currentStep === "summary") {
