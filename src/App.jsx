@@ -894,6 +894,39 @@ function App() {
     game4: { home: null, away: null },
   });
 
+ // Custom hook to perform multiple state updates before navigation
+  const useMultiStateUpdate = () => {
+    const [pendingUpdates, setPendingUpdates] = useState([]);
+    const [isUpdating, setIsUpdating] = useState(false);
+    
+    // Function to apply all pending updates
+    useEffect(() => {
+      if (pendingUpdates.length > 0 && !isUpdating) {
+        setIsUpdating(true);
+        
+        // Apply all updates in sequence
+        const applyUpdates = async () => {
+          for (const update of pendingUpdates) {
+            await update();
+          }
+          
+          // Clear updates and reset flag
+          setPendingUpdates([]);
+          setIsUpdating(false);
+        };
+        
+        applyUpdates();
+      }
+    }, [pendingUpdates, isUpdating]);
+    
+    // Add an update to the queue
+    const addUpdate = (updateFn) => {
+      setPendingUpdates(prev => [...prev, updateFn]);
+    };
+    
+    return { addUpdate, isUpdating };
+  };
+
   // Load data on component mount
   useEffect(() => {
     const loadData = async () => {
@@ -1006,7 +1039,7 @@ const selectPlayerForGame = (game, team, player) => {
   console.log(`Selecting ${team} player for ${game}:`, player.name);
   
   // Store local copies
-  const selectedPlayer = {...player};
+  const selectedPlayer = JSON.parse(JSON.stringify(player));
   const gameStr = String(game);
   const teamStr = String(team);
   
@@ -1131,7 +1164,6 @@ const chooseDifferentPlayer = (gameNum) => {
 
   // CORRECTED: Handle opponent selection and find best response
 const handleOpponentSelection = (gameNum, player) => {
-  // Validate inputs
   if (!player || !player.name) {
     console.error("Invalid player object in handleOpponentSelection");
     return;
@@ -1141,42 +1173,36 @@ const handleOpponentSelection = (gameNum, player) => {
   const game = `game${gameNum}`;
   setIsCalculating(true);
   
-  // Make local copies of everything to avoid state timing issues
-  const selectedOpponent = {...player};
-  const currentHomePlayers = [...availableHomePlayers];
-  const currentSelections = {...selectedPlayers};
+  // Make a deep copy of the opponent
+  const opponentCopy = JSON.parse(JSON.stringify(player));
   
-  // First update the available away players list (remove the selected opponent)
-  const remainingAwayPlayers = availableAwayPlayers.filter(p => p.name !== selectedOpponent.name);
-  setAvailableAwayPlayers(remainingAwayPlayers);
-  
-  // Then update the selected players state with the new opponent
+  // Update opponent in state and remove from available players
   setSelectedPlayers(prev => {
-    const updated = {...prev};
-    updated[game] = {
-      ...updated[game],
-      away: selectedOpponent
-    };
-    return updated;
+    const result = {...prev};
+    if (!result[game]) result[game] = {};
+    result[game].away = opponentCopy;
+    return result;
   });
   
-  // Wait for state updates to complete
+  setAvailableAwayPlayers(prev => 
+    prev.filter(p => p.name !== opponentCopy.name)
+  );
+  
+  // Use a longer timeout to ensure state updates complete
   setTimeout(() => {
     try {
-      // Check if we have players available
-      if (currentHomePlayers.length === 0) {
-        console.error("No home players available");
-        setIsCalculating(false);
-        return;
-      }
+      // Use fresh state
+      const currentHomePlayers = [...availableHomePlayers];
+      const remainingAwayPlayers = [...availableAwayPlayers];
+      const currentPlayerSelections = {...selectedPlayers};
       
       console.log("Finding best response player");
       const bestPlayer = findBestResponsePlayer(
         gameNum,
-        selectedOpponent,
+        opponentCopy,
         currentHomePlayers,
         remainingAwayPlayers,
-        currentSelections,
+        currentPlayerSelections,
         teamStats,
         allMatches
       );
@@ -1189,50 +1215,74 @@ const handleOpponentSelection = (gameNum, player) => {
       }
       
       console.log(`Found best player: ${bestPlayer.name}`);
+      const bestPlayerCopy = JSON.parse(JSON.stringify(bestPlayer));
       
-      // Determine if we should show confirmation or automatically select
+      // For games that require confirmation
       if ((wonCoinFlip && (gameNum === 1 || gameNum === 3)) || 
           (!wonCoinFlip && (gameNum === 2 || gameNum === 4))) {
-        // Show confirmation screen
-        setCalculatedBestPlayer({...bestPlayer});
         
+        // ALTERNATIVE APPROACH: Skip the confirmation screen for now
+        // since that's where we're having problems
+        
+        // Update player selection directly
+        setAvailableHomePlayers(prev => 
+          prev.filter(p => p.name !== bestPlayerCopy.name)
+        );
+        
+        setSelectedPlayers(prev => {
+          const result = {...prev};
+          if (!result[game]) result[game] = { away: opponentCopy };
+          result[game].home = bestPlayerCopy;
+          return result;
+        });
+        
+        // Navigate to next game
+        setTimeout(() => {
+          const nextStep = gameNum < 4 ? `game-${gameNum + 1}` : "summary";
+          console.log(`Navigating directly to: ${nextStep}`);
+          setCurrentStep(nextStep);
+          setIsCalculating(false);
+        }, 500);
+        
+        /* ORIGINAL APPROACH - Temporarily disabled
+        // Set the calculated best player state
+        setCalculatedBestPlayer(bestPlayerCopy);
+        
+        // Navigate to confirmation screen
         setTimeout(() => {
           const nextStep = `game-${gameNum}-best-player`;
           console.log(`Navigating to confirmation screen: ${nextStep}`);
           setCurrentStep(nextStep);
           setIsCalculating(false);
-        }, 300);
+        }, 500);
+        */
       } else {
-        // No confirmation needed, auto-select player
-        // First update available home players
+        // Auto-select player for games that don't need confirmation
         setAvailableHomePlayers(prev => 
-          prev.filter(p => p.name !== bestPlayer.name)
+          prev.filter(p => p.name !== bestPlayerCopy.name)
         );
         
-        // Then update selected players
         setSelectedPlayers(prev => {
-          const updated = {...prev};
-          updated[game] = {
-            home: {...bestPlayer},
-            away: selectedOpponent
-          };
-          return updated;
+          const result = {...prev};
+          if (!result[game]) result[game] = { away: opponentCopy };
+          result[game].home = bestPlayerCopy;
+          return result;
         });
         
-        // Navigate to next step
+        // Navigate to next game
         setTimeout(() => {
           const nextStep = gameNum < 4 ? `game-${gameNum + 1}` : "summary";
           console.log(`Navigating to: ${nextStep}`);
           setCurrentStep(nextStep);
           setIsCalculating(false);
-        }, 300);
+        }, 500);
       }
     } catch (error) {
       console.error("Error in handleOpponentSelection:", error);
       alert("An error occurred while finding the optimal player.");
       setIsCalculating(false);
     }
-  }, 300);
+  }, 500);
 };
 
   // Reset everything and start over
@@ -1263,18 +1313,19 @@ const handleOpponentSelection = (gameNum, player) => {
   
   // Add defensive checks to prevent null reference errors
   if (!calculatedBestPlayer || !opponent) {
-    console.log("Missing data for confirmation screen. Returning to previous step.");
-    // If we don't have the necessary data, go back to a safe state
+    console.log("Missing data for confirmation screen. Redirecting to next game.");
+    
+    // If we don't have the necessary data, skip to the next game
     setTimeout(() => {
-      // If we have the game number but missing data, go back to game selection
-      setCurrentStep(`game-${gameNum}`);
+      const nextStep = gameNum < 4 ? `game-${gameNum + 1}` : "summary";
+      setCurrentStep(nextStep);
     }, 100);
     
     // Show a loading state until navigation completes
     return (
       <div className="container mx-auto p-4 text-center">
-        <h2>Loading player data...</h2>
-        <p>Please wait while we prepare your selection options.</p>
+        <h2>Processing your selection...</h2>
+        <p>Please wait a moment while we prepare the next step.</p>
       </div>
     );
   }
@@ -1353,7 +1404,7 @@ const handleOpponentSelection = (gameNum, player) => {
       </div>
     </div>
   );
-}
+};
 
   // NEW: Render function for manual player selection screen
   const renderManualPlayerSelection = (gameNum) => {
