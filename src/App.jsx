@@ -999,7 +999,15 @@ function App() {
 const selectPlayerForGame = (game, team, player) => {
   console.log(`Selecting ${team} player for ${game}:`, player.name);
 
-  // Update selected players
+  if (team === "home") {
+    // First update our available players list
+    setAvailableHomePlayers(prev => prev.filter(p => p.name !== player.name));
+  } else {
+    // Update available away players
+    setAvailableAwayPlayers(prev => prev.filter(p => p.name !== player.name));
+  }
+
+  // Then update the selected players
   setSelectedPlayers(prev => ({
     ...prev,
     [game]: {
@@ -1007,29 +1015,22 @@ const selectPlayerForGame = (game, team, player) => {
       [team]: player,
     },
   }));
-
-  // Remove player from available list
-  if (team === "home") {
-    setAvailableHomePlayers(prev => prev.filter(p => p.name !== player.name));
-    
-    // Special cases for blind selections - redirect to opponent selection screens
-    if ((!wonCoinFlip && (game === "game1" || game === "game3")) || 
-        (wonCoinFlip && (game === "game2" || game === "game4"))) {
-      const gameNumber = parseInt(game.replace("game", ""));
-      setTimeout(() => {
-        setCurrentStep(`game-${gameNumber}-opponent`);
-      }, 100);
-      return;
-    }
-  } else {
-    setAvailableAwayPlayers(prev => prev.filter(p => p.name !== player.name));
-  }
-
-  // Move to next step for all other cases
+  
+  // Determine the next screen based on context
   const gameNumber = parseInt(game.replace("game", ""));
+  
+  // Allow state updates to process before navigation
   setTimeout(() => {
-    setCurrentStep(gameNumber < 4 ? `game-${gameNumber + 1}` : "summary");
-  }, 100);
+    // Special cases for blind selections - redirect to opponent selection screens
+    if (team === "home" && 
+        ((!wonCoinFlip && (game === "game1" || game === "game3")) || 
+         (wonCoinFlip && (game === "game2" || game === "game4")))) {
+      setCurrentStep(`game-${gameNumber}-opponent`);
+    } else {
+      // Move to next step for all other cases
+      setCurrentStep(gameNumber < 4 ? `game-${gameNumber + 1}` : "summary");
+    }
+  }, 200);
 };
 
 // Step 1: Team selection
@@ -1057,7 +1058,12 @@ const selectPlayerForGame = (game, team, player) => {
   const confirmBestPlayer = (gameNum) => {
   const game = `game${gameNum}`;
   
-  // Update selected players with the calculated best player
+  // First update our available players list to remove the selected player
+  setAvailableHomePlayers(prev => 
+    prev.filter(p => p.name !== calculatedBestPlayer.name)
+  );
+  
+  // Then update the selected players state
   setSelectedPlayers(prev => ({
     ...prev,
     [game]: {
@@ -1066,29 +1072,23 @@ const selectPlayerForGame = (game, team, player) => {
     },
   }));
   
-  // Remove selected player from available list
-  setAvailableHomePlayers(prev => 
-    prev.filter(p => p.name !== calculatedBestPlayer.name)
-  );
-  
   // Reset the calculated best player
   setCalculatedBestPlayer(null);
   
-  // Use setTimeout to ensure state updates complete before navigation
+  // Navigate to the next step after a delay to ensure state updates are processed
   setTimeout(() => {
-    // Navigate to the next game or summary
     setCurrentStep(gameNum < 4 ? `game-${gameNum + 1}` : "summary");
-  }, 100);
+  }, 200);
 };
 
   // NEW: Function to choose a different player instead
 const chooseDifferentPlayer = (gameNum) => {
-  // Navigate to a manual selection screen with a timeout
+  // Use setTimeout to ensure state updates complete before navigation
   setTimeout(() => {
     setCurrentStep(`game-${gameNum}-manual-selection`);
     // Reset the calculated best player
     setCalculatedBestPlayer(null);
-  }, 100);
+  }, 200);
 };
 
   // CORRECTED: Handle opponent selection and find best response
@@ -1099,11 +1099,10 @@ const handleOpponentSelection = (gameNum, player) => {
   // Store the opponent player selection
   const selectedOpponent = player;
   
-  // Update available opponents list
-  const remainingAwayPlayers = availableAwayPlayers.filter(p => p.name !== selectedOpponent.name);
-  setAvailableAwayPlayers(remainingAwayPlayers);
+  // Create a local copy of the remaining away players for calculations
+  const remainingAwayPlayers = [...availableAwayPlayers].filter(p => p.name !== selectedOpponent.name);
   
-  // Update opponent state
+  // Update state for the selected opponent and available away players
   setSelectedPlayers(prev => ({
     ...prev,
     [game]: {
@@ -1112,10 +1111,10 @@ const handleOpponentSelection = (gameNum, player) => {
     },
   }));
   
-  // Find the best response player
+  setAvailableAwayPlayers(remainingAwayPlayers);
+  
+  // Wait for state updates to process and then find the best response
   setTimeout(() => {
-    console.log(`Finding best player for game ${gameNum} against ${selectedOpponent.name}`);
-    
     try {
       const bestPlayer = findBestResponsePlayer(
         gameNum,
@@ -1128,17 +1127,22 @@ const handleOpponentSelection = (gameNum, player) => {
       );
       
       if (bestPlayer) {
-        console.log(`Found best player: ${bestPlayer.name}`);
-        
-        // FIXED LOGIC: If we won coin flip and it's game 1/3 OR we lost and it's game 2/4,
-        // we should go to the confirmation screen
+        // If won coin flip and it's game 1/3 OR lost and it's game 2/4, show confirmation
         if ((wonCoinFlip && (gameNum === 1 || gameNum === 3)) || 
             (!wonCoinFlip && (gameNum === 2 || gameNum === 4))) {
-          // Show confirmation screen
+          // Store the calculated best player and navigate to confirmation screen
           setCalculatedBestPlayer(bestPlayer);
-          setCurrentStep(`game-${gameNum}-best-player`);
+          setTimeout(() => {
+            setCurrentStep(`game-${gameNum}-best-player`);
+            setIsCalculating(false);
+          }, 100);
         } else {
-          // Automatically select the best player
+          // Otherwise, automatically select the best player
+          // Update available home players state first
+          const updatedHomePlayers = availableHomePlayers.filter(p => p.name !== bestPlayer.name);
+          setAvailableHomePlayers(updatedHomePlayers);
+          
+          // Then update selected players
           setSelectedPlayers(prev => ({
             ...prev,
             [game]: {
@@ -1147,14 +1151,12 @@ const handleOpponentSelection = (gameNum, player) => {
             },
           }));
           
-          setAvailableHomePlayers(prev => prev.filter(p => p.name !== bestPlayer.name));
-          
-          // Move to next game
+          // Navigate to next step with a delay
           setTimeout(() => {
             setCurrentStep(gameNum < 4 ? `game-${gameNum + 1}` : "summary");
-          }, 100);
+            setIsCalculating(false);
+          }, 200);
         }
-        setIsCalculating(false);
       } else {
         console.error("No best player found");
         alert("Could not find optimal player. Please try again.");
