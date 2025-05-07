@@ -1353,6 +1353,7 @@ const handleOpponentSelection = (gameNum, player) => {
       </div>
     </div>
   );
+}
 
   // NEW: Render function for manual player selection screen
   const renderManualPlayerSelection = (gameNum) => {
