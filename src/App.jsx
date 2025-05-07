@@ -271,6 +271,186 @@ function makeMatrixCopy(matrix) {
   return matrix.map(row => [...row]);
 }
 
+// Modify the renderGameSelection function to show previous selections
+const renderGameSelection = (gameNum) => {
+  const game = `game${gameNum}`;
+  const previousGame = `game${gameNum - 1}`;
+  const previousMatchup = selectedPlayers[previousGame];
+  const weSelectBlind = 
+    (wonCoinFlip && (gameNum === 2 || gameNum === 4)) || 
+    (!wonCoinFlip && (gameNum === 1 || gameNum === 3));
+
+  // Common header section that shows the previous selection
+  const headerSection = previousMatchup && previousMatchup.home && previousMatchup.away ? (
+    <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+      <h3 className="font-medium mb-2">Previous Game Matchup</h3>
+      <p>For Game {gameNum - 1}, the optimal matchup was determined to be:</p>
+      <div className="mt-2 flex items-center justify-between p-3 bg-white rounded-lg">
+        <div>
+          <span className="font-bold">{previousMatchup.home.displayName}</span>
+          <span className="text-gray-500 mx-1">vs</span>
+          <span className="font-bold">{previousMatchup.away.displayName}</span>
+        </div>
+        <div className="text-sm">
+          <span className="mr-2">Win probability:</span>
+          <span className="font-medium text-green-600">
+            {Math.round(calculateWinProbability(
+              previousMatchup.home.name,
+              previousMatchup.away.name,
+              teamStats,
+              allMatches
+            ) * 100)}%
+          </span>
+        </div>
+      </div>
+    </div>
+  ) : null;
+
+  if (weSelectBlind) {
+    // We put up blind
+    return (
+      <div className="container mx-auto p-4">
+        <FloatingInfoButton onClick={() => setShowInfoPopup(true)} />
+        <InfoPopup isOpen={showInfoPopup} onClose={() => setShowInfoPopup(false)} />
+        <h1 className="text-3xl font-bold mb-6 text-center">
+          Pool Team Stats Analyzer
+        </h1>
+
+        {headerSection}
+
+        <div className="bg-blue-50 p-6 rounded-lg mb-8">
+          <h2 className="text-xl font-semibold mb-4">Game {gameNum} Selection</h2>
+          <p className="mb-4">
+            You need to put up a player blind for Game {gameNum}.
+          </p>
+          
+          {isCalculating ? (
+            <div className="text-center py-4">
+              <p>Finding optimal player...</p>
+              <div className="mt-2 w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                <div className="h-full bg-blue-500 animate-pulse"></div>
+              </div>
+            </div>
+          ) : (
+            <>
+              <p className="mb-4">
+                Recommended player based on Hungarian algorithm analysis:{" "}
+                <span className="font-bold">
+                  {optimalPlayer?.displayName || "Calculating..."}
+                </span>
+              </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {availableHomePlayers.map((player) => {
+                  // Calculate average win probability against all opponents
+                  const avgWinProb = availableAwayPlayers.reduce((sum, opponent) => {
+                    return sum + calculateWinProbability(
+                      player.name,
+                      opponent.name,
+                      teamStats,
+                      allMatches
+                    );
+                  }, 0) / Math.max(1, availableAwayPlayers.length);
+                  
+                  return (
+                    <div
+                      key={`select-player-${player.name}`}
+                      className={`p-4 border rounded-lg cursor-pointer hover:bg-blue-100 ${
+                        player.name === optimalPlayer?.name
+                          ? "bg-green-50 border-green-500"
+                          : ""
+                      }`}
+                      onClick={() => selectPlayerForGame(game, "home", player)}
+                    >
+                      <div className="font-medium">{player.displayName}</div>
+                      <div className="text-sm text-gray-600">
+                        HCP: {player.handicap}
+                      </div>
+                      <div className="mt-2">
+                        <div className="text-sm">Average win probability:</div>
+                        <div className="flex items-center mt-1">
+                          <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden mr-2">
+                            <div
+                              className="h-full bg-green-500"
+                              style={{ width: `${avgWinProb * 100}%` }}
+                            ></div>
+                          </div>
+                          <span className="font-medium">
+                            {Math.round(avgWinProb * 100)}%
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </div>
+
+        <div className="flex justify-center">
+          <button
+            className="px-4 py-2 bg-gray-300 text-gray-800 rounded"
+            onClick={handleReset}
+          >
+            Start Over
+          </button>
+        </div>
+      </div>
+    );
+  } else {
+    // Opponent puts up blind, we respond
+    return (
+      <div className="container mx-auto p-4">
+        <FloatingInfoButton onClick={() => setShowInfoPopup(true)} />
+        <InfoPopup isOpen={showInfoPopup} onClose={() => setShowInfoPopup(false)} />
+        <h1 className="text-3xl font-bold mb-6 text-center">
+          Pool Team Stats Analyzer
+        </h1>
+
+        {headerSection}
+
+        <div className="bg-blue-50 p-6 rounded-lg mb-8">
+          <h2 className="text-xl font-semibold mb-4">Game {gameNum} Selection</h2>
+          <p className="mb-4">
+            The opponent selects a player for Game {gameNum}. Which player did they choose?
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {availableAwayPlayers.map((player) => (
+              <div
+                key={`select-opponent-${player.name}`}
+                className="p-4 border rounded-lg cursor-pointer hover:bg-blue-100"
+                onClick={() => handleOpponentSelection(gameNum, player)}
+              >
+                <div className="font-medium">{player.displayName}</div>
+                <div className="text-sm text-gray-600">
+                  HCP: {player.handicap}
+                </div>
+                <div className="mt-2">
+                  <div className="text-sm">Record:</div>
+                  <div className="text-sm mt-1">
+                    {player.wins}-{player.losses} ({player.winPercentage}%)
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex justify-center">
+          <button
+            className="px-4 py-2 bg-gray-300 text-gray-800 rounded"
+            onClick={handleReset}
+          >
+            Start Over
+          </button>
+        </div>
+      </div>
+    );
+  }
+};
+
 // Hungarian algorithm implementation
 function hungarianOptimalAssignment(matrix) {
   if (!matrix || matrix.length === 0) return [];
@@ -1722,11 +1902,15 @@ function App() {
 
   // Render summary
   if (currentStep === "summary") {
+    console.log("Rendering summary page with selected players:", selectedPlayers);
+    
     // Calculate overall win probability based on final matchups
-    const matchupsWithProbability = Object.values(selectedPlayers)
-      .filter((matchup) => matchup.home && matchup.away)
-      .map((matchup) => ({
-        ...matchup,
+    const matchupsWithProbability = Object.entries(selectedPlayers)
+      .filter(([game, matchup]) => matchup.home && matchup.away)
+      .map(([game, matchup]) => ({
+        game: parseInt(game.replace("game", "")),
+        home: matchup.home,
+        away: matchup.away,
         winProbability: calculateWinProbability(
           matchup.home.name,
           matchup.away.name,
@@ -1734,6 +1918,8 @@ function App() {
           allMatches
         ),
       }));
+
+    console.log("Matchups with probability:", matchupsWithProbability);
 
     const overallWinPercentage =
       matchupsWithProbability.length > 0
@@ -1773,25 +1959,11 @@ function App() {
                 </tr>
               </thead>
               <tbody>
-                {[1, 2, 3, 4].map((gameNum) => {
-                  const game = `game${gameNum}`;
-                  const matchup = selectedPlayers[game];
-
-                  // Skip rows where either player is missing
-                  if (!matchup.home || !matchup.away) {
-                    return null;
-                  }
-
-                  const winProb = calculateWinProbability(
-                    matchup.home.name,
-                    matchup.away.name,
-                    teamStats,
-                    allMatches
-                  );
-
-                  return (
-                    <tr key={`summary-${game}`} className="border-t">
-                      <td className="p-2">Game {gameNum}</td>
+                {matchupsWithProbability
+                  .sort((a, b) => a.game - b.game)
+                  .map((matchup) => (
+                    <tr key={`summary-game${matchup.game}`} className="border-t">
+                      <td className="p-2">Game {matchup.game}</td>
                       <td className="p-2">{matchup.home.displayName}</td>
                       <td className="p-2">{matchup.away.displayName}</td>
                       <td className="p-2">
@@ -1799,18 +1971,17 @@ function App() {
                           <div className="w-24 h-4 bg-gray-200 rounded-full overflow-hidden mr-2">
                             <div
                               className="h-full bg-green-500"
-                              style={{ width: `${winProb * 100}%` }}
+                              style={{ width: `${matchup.winProbability * 100}%` }}
                             ></div>
                           </div>
-                          <span>{Math.round(winProb * 100)}%</span>
+                          <span>{Math.round(matchup.winProbability * 100)}%</span>
                         </div>
                       </td>
                       <td className="p-2">
                         {matchup.home.handicap} vs {matchup.away.handicap}
                       </td>
                     </tr>
-                  );
-                })}
+                  ))}
               </tbody>
             </table>
           </div>
