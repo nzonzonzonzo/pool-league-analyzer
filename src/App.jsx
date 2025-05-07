@@ -1047,62 +1047,79 @@ function App() {
     };
 
     // Handle opponent selection and find best response
-  const handleOpponentSelection = (gameNum, player) => {
-    const game = `game${gameNum}`;
-    setIsCalculating(true);
-    
-    // Store the opponent player selection in local variables
-    const selectedOpponent = player;
-    
-    // Create a local copy of remaining available players
-    const remainingAwayPlayers = availableAwayPlayers.filter(p => p.name !== selectedOpponent.name);
-    
-    // Update opponent state but don't navigate yet
-    setSelectedPlayers(prev => ({
-      ...prev,
-      [game]: {
-        ...prev[game],
-        away: selectedOpponent,
-      },
-    }));
-    
-    // Update available opponents list
-    setAvailableAwayPlayers(remainingAwayPlayers);
-    
-    // Run the Hungarian algorithm to find the best player
-    setTimeout(() => {
-      const bestPlayer = findBestResponsePlayer(
-        gameNum,
-        selectedOpponent,
-        availableHomePlayers,
-        remainingAwayPlayers,
-        selectedPlayers,
-        teamStats,
-        allMatches
-      );
+    const handleOpponentSelection = (gameNum, player) => {
+      const game = `game${gameNum}`;
+      setIsCalculating(true);
       
-      if (bestPlayer) {
-        // Update our player selection
-        setSelectedPlayers(prev => ({
-          ...prev,
-          [game]: {
-            home: bestPlayer,
-            away: selectedOpponent,
-          },
-        }));
+      // Store the opponent player selection in local variables
+      const selectedOpponent = player;
+      
+      // Create a local copy of remaining available players
+      const remainingAwayPlayers = availableAwayPlayers.filter(p => p.name !== selectedOpponent.name);
+      
+      // Update opponent state but don't navigate yet
+      setSelectedPlayers(prev => ({
+        ...prev,
+        [game]: {
+          ...prev[game],
+          away: selectedOpponent,
+        },
+      }));
+      
+      // Update available opponents list
+      setAvailableAwayPlayers(remainingAwayPlayers);
+      
+      // Give more time for state updates to process
+      setTimeout(() => {
+        console.log(`Finding best player for game ${gameNum} against ${selectedOpponent.name}`);
         
-        // Remove selected player from available list
-        setAvailableHomePlayers(prev => prev.filter(p => p.name !== bestPlayer.name));
-        
-        // Only now that all updates are complete, navigate to the next game
-        setCurrentStep(gameNum < 4 ? `game-${gameNum + 1}` : "summary");
-      } else {
-        // Handle error case
-        alert("Could not find optimal player. Please try again.");
-        setIsCalculating(false);
-      }
-    }, 50); // Short timeout is enough for Hungarian algorithm
-  };
+        // Run in a try/catch to handle any potential errors
+        try {
+          const bestPlayer = findBestResponsePlayer(
+            gameNum,
+            selectedOpponent,
+            availableHomePlayers,
+            remainingAwayPlayers,
+            selectedPlayers,
+            teamStats,
+            allMatches
+          );
+          
+          if (bestPlayer) {
+            console.log(`Found best player: ${bestPlayer.name}`);
+            
+            // Update our player selection
+            setSelectedPlayers(prev => ({
+              ...prev,
+              [game]: {
+                home: bestPlayer,
+                away: selectedOpponent,
+              },
+            }));
+            
+            // Remove selected player from available list
+            setAvailableHomePlayers(prev => prev.filter(p => p.name !== bestPlayer.name));
+            
+            // Give React more time to process state updates before navigating
+            setTimeout(() => {
+              console.log(`Navigating to ${gameNum < 4 ? `game-${gameNum + 1}` : "summary"}`);
+              // Only now that all updates are complete, navigate to the next game
+              setCurrentStep(gameNum < 4 ? `game-${gameNum + 1}` : "summary");
+              setIsCalculating(false);
+            }, 100);
+          } else {
+            console.error("No best player found");
+            // Handle error case
+            alert("Could not find optimal player. Please try again.");
+            setIsCalculating(false);
+          }
+        } catch (error) {
+          console.error("Error in handleOpponentSelection:", error);
+          alert("An error occurred while finding the optimal player.");
+          setIsCalculating(false);
+        }
+      }, 250); // Longer timeout for Hungarian algorithm
+    };
 
   // Reset everything and start over
   const handleReset = () => {
