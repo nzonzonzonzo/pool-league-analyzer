@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import "./App.css";
 
+// Add this with your other state declarations
+const processingSelectionRef = useRef(null);
+
 // Name formatting utility - more economical implementation
 const formatName = (fullName) => {
   if (!fullName || typeof fullName !== 'string') return fullName;
@@ -1039,6 +1042,15 @@ const selectPlayerForGame = (game, team, player) => {
     return;
   }
   
+  // Check if we're already processing a selection for this game
+  if (processingSelectionRef.current === game) {
+    console.log(`Already processing a selection for ${game}, skipping`);
+    return;
+  }
+  
+  // Set the processing flag
+  processingSelectionRef.current = game;
+  
   console.log(`Selecting ${team} player for ${game}:`, player.name);
   
   // Store local copies
@@ -1088,6 +1100,13 @@ const selectPlayerForGame = (game, team, player) => {
     
     console.log(`Navigating to: ${nextStep}`);
     setCurrentStep(nextStep);
+    
+    // Clear the processing flag
+    setTimeout(() => {
+      if (processingSelectionRef.current === gameStr) {
+        processingSelectionRef.current = null;
+      }
+    }, 500);
   }, 300);
 };
 
@@ -1177,18 +1196,14 @@ const handleOpponentSelection = (gameNum, player) => {
   
   const game = `game${gameNum}`;
   
-  // Modified guard clause - only check for home player if we're in a step
-  // that involves selecting a home player in response to an opponent
-  if (currentStep === `game-${gameNum}` && selectedPlayers[game]?.home) {
-    console.log(`Already selected a home player for game ${gameNum}, skipping`);
+  // Check if we're already processing a selection for this game
+  if (processingSelectionRef.current === game) {
+    console.log(`Already processing a selection for game ${gameNum}, skipping`);
     return;
   }
   
-  // For opponent selection screens, check if we already have an away player
-  if (currentStep === `game-${gameNum}-opponent` && selectedPlayers[game]?.away) {
-    console.log(`Already selected an away player for game ${gameNum}, skipping`);
-    return;
-  }
+  // Set the processing flag
+  processingSelectionRef.current = game;
   
   console.log(`Handling opponent selection for Game ${gameNum}: ${player.name}`);
   setIsCalculating(true);
@@ -1280,6 +1295,11 @@ const handleOpponentSelection = (gameNum, player) => {
       alert("An error occurred while finding the optimal player.");
       setIsCalculating(false);
     }
+  setTimeout(() => {
+    if (processingSelectionRef.current === game) {
+      processingSelectionRef.current = null;
+    }
+  }, 1000); // Clear after 1 second to ensure processing is complete
   }, 500);
 };
 
