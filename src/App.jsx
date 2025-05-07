@@ -1016,7 +1016,6 @@ const selectPlayerForGame = (game, team, player) => {
     if ((!wonCoinFlip && (game === "game1" || game === "game3")) || 
         (wonCoinFlip && (game === "game2" || game === "game4"))) {
       const gameNumber = parseInt(game.replace("game", ""));
-      // Use setTimeout to ensure state updates complete
       setTimeout(() => {
         setCurrentStep(`game-${gameNumber}-opponent`);
       }, 100);
@@ -1026,14 +1025,7 @@ const selectPlayerForGame = (game, team, player) => {
     setAvailableAwayPlayers(prev => prev.filter(p => p.name !== player.name));
   }
 
-  // Move to next step with a timeout to ensure state updates
-  const gameNumber = parseInt(game.replace("game", ""));
-  setTimeout(() => {
-    setCurrentStep(gameNumber < 4 ? `game-${gameNumber + 1}` : "summary");
-  }, 100);
-};
-
-  // Move to next step for all other cases with a small timeout
+  // Move to next step for all other cases
   const gameNumber = parseInt(game.replace("game", ""));
   setTimeout(() => {
     setCurrentStep(gameNumber < 4 ? `game-${gameNumber + 1}` : "summary");
