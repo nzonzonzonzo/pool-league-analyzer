@@ -1823,8 +1823,8 @@ function App() {
               Start Over
             </button>
           </div>
-          </div>
       );
+    }
 }
 
 export default App;
