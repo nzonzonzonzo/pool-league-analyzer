@@ -291,7 +291,7 @@ const renderGameSelection = (gameNum) => {
       // ... rest of the header section
     </div>
   ) : null;
-}
+
 
   // Header section showing previous matchup
   const headerSection = previousMatchup && previousMatchup.home && previousMatchup.away ? (
@@ -318,7 +318,7 @@ const renderGameSelection = (gameNum) => {
       </div>
     </div>
   )
-
+}
 
 
 // Hungarian algorithm implementation
