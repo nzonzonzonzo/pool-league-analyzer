@@ -1673,7 +1673,7 @@ function App() {
           <h1 className="text-3xl font-bold mb-6 text-center">
             Pool Team Stats Analyzer
           </h1>
-            {headerSection}
+           
           <div className="bg-blue-50 p-6 rounded-lg mb-8">
             <h2 className="text-xl font-semibold mb-4">Game {gameNum} Selection</h2>
             <p className="mb-4">
@@ -1763,7 +1763,7 @@ function App() {
           <h1 className="text-3xl font-bold mb-6 text-center">
             Pool Team Stats Analyzer
           </h1>
-          {headerSection}
+          
           <div className="bg-blue-50 p-6 rounded-lg mb-8">
             <h2 className="text-xl font-semibold mb-4">Game {gameNum} Selection</h2>
             <p className="mb-4">
@@ -1850,7 +1850,7 @@ function App() {
         <h1 className="text-3xl font-bold mb-6 text-center">
           Pool Team Stats Analyzer
         </h1>
-        {headerSection}
+        
         <div className="bg-blue-50 p-6 rounded-lg mb-8">
           <h2 className="text-xl font-semibold mb-4">Final Matchups</h2>
           <p className="mb-6">
