@@ -1258,79 +1258,101 @@ const handleOpponentSelection = (gameNum, player) => {
 
   // NEW: Render function for best player confirmation stage
   const renderBestPlayerConfirmation = (gameNum) => {
-    const game = `game${gameNum}`;
-    const opponent = selectedPlayers[game].away;
+  const game = `game${gameNum}`;
+  const opponent = selectedPlayers[game]?.away;
+  
+  // Add defensive checks to prevent null reference errors
+  if (!calculatedBestPlayer || !opponent) {
+    console.log("Missing data for confirmation screen. Returning to previous step.");
+    // If we don't have the necessary data, go back to a safe state
+    setTimeout(() => {
+      // If we have the game number but missing data, go back to game selection
+      setCurrentStep(`game-${gameNum}`);
+    }, 100);
     
-    // Calculate win probability against the opponent
-    const winProb = calculateWinProbability(
+    // Show a loading state until navigation completes
+    return (
+      <div className="container mx-auto p-4 text-center">
+        <h2>Loading player data...</h2>
+        <p>Please wait while we prepare your selection options.</p>
+      </div>
+    );
+  }
+  
+  // Calculate win probability safely
+  let winProb = 0.5; // Default value
+  try {
+    winProb = calculateWinProbability(
       calculatedBestPlayer.name,
       opponent.name,
       teamStats,
       allMatches
     );
-    
-    return (
-      <div className="container mx-auto p-4">
-        <FloatingInfoButton onClick={() => setShowInfoPopup(true)} />
-        <InfoPopup isOpen={showInfoPopup} onClose={() => setShowInfoPopup(false)} />
-        <h1 className="text-3xl font-bold mb-6 text-center">
-          Pool Team Stats Analyzer
-        </h1>
+  } catch (error) {
+    console.error("Error calculating win probability:", error);
+  }
+  
+  return (
+    <div className="container mx-auto p-4">
+      <FloatingInfoButton onClick={() => setShowInfoPopup(true)} />
+      <InfoPopup isOpen={showInfoPopup} onClose={() => setShowInfoPopup(false)} />
+      <h1 className="text-3xl font-bold mb-6 text-center">
+        Pool Team Stats Analyzer
+      </h1>
+      
+      <div className="bg-blue-50 p-6 rounded-lg mb-8">
+        <h2 className="text-xl font-semibold mb-4">Optimal Player for Game {gameNum}</h2>
+        <p className="mb-4">
+          Based on the Hungarian algorithm, your optimal player to match against {opponent.displayName} is:
+        </p>
         
-        <div className="bg-blue-50 p-6 rounded-lg mb-8">
-          <h2 className="text-xl font-semibold mb-4">Optimal Player for Game {gameNum}</h2>
-          <p className="mb-4">
-            Based on the Hungarian algorithm, your optimal player to match against {opponent.displayName} is:
-          </p>
-          
-          <div className="p-4 border rounded-lg bg-green-50 border-green-500 mb-6">
-            <div className="font-medium text-lg">{calculatedBestPlayer.displayName}</div>
-            <div className="text-sm text-gray-600">
-              HCP: {calculatedBestPlayer.handicap}
-            </div>
-            <div className="mt-2">
-              <div className="text-sm">Win probability against {opponent.displayName}:</div>
-              <div className="flex items-center mt-1">
-                <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden mr-2">
-                  <div
-                    className="h-full bg-green-500"
-                    style={{ width: `${winProb * 100}%` }}
-                  ></div>
-                </div>
-                <span className="font-medium">
-                  {Math.round(winProb * 100)}%
-                </span>
-              </div>
-            </div>
+        <div className="p-4 border rounded-lg bg-green-50 border-green-500 mb-6">
+          <div className="font-medium text-lg">{calculatedBestPlayer.displayName}</div>
+          <div className="text-sm text-gray-600">
+            HCP: {calculatedBestPlayer.handicap}
           </div>
-          
-          <div className="flex flex-col md:flex-row justify-center gap-4">
-            <button
-              className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-              onClick={() => confirmBestPlayer(gameNum)}
-            >
-              Confirm This Player
-            </button>
-            <button
-              className="px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-              onClick={() => chooseDifferentPlayer(gameNum)}
-            >
-              Choose Different Player
-            </button>
+          <div className="mt-2">
+            <div className="text-sm">Win probability against {opponent.displayName}:</div>
+            <div className="flex items-center mt-1">
+              <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden mr-2">
+                <div
+                  className="h-full bg-green-500"
+                  style={{ width: `${winProb * 100}%` }}
+                ></div>
+              </div>
+              <span className="font-medium">
+                {Math.round(winProb * 100)}%
+              </span>
+            </div>
           </div>
         </div>
         
-        <div className="flex justify-center">
+        <div className="flex flex-col md:flex-row justify-center gap-4">
           <button
-            className="px-4 py-2 bg-gray-300 text-gray-800 rounded"
-            onClick={handleReset}
+            className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+            onClick={() => confirmBestPlayer(gameNum)}
           >
-            Start Over
+            Confirm This Player
+          </button>
+          <button
+            className="px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            onClick={() => chooseDifferentPlayer(gameNum)}
+          >
+            Choose Different Player
           </button>
         </div>
       </div>
-    );
-  };
+      
+      <div className="flex justify-center">
+        <button
+          className="px-4 py-2 bg-gray-300 text-gray-800 rounded"
+          onClick={handleReset}
+        >
+          Start Over
+        </button>
+      </div>
+    </div>
+  );
 
   // NEW: Render function for manual player selection screen
   const renderManualPlayerSelection = (gameNum) => {
