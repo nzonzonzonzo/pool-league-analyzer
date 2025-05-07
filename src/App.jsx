@@ -90,35 +90,35 @@ const InfoPopup = ({ isOpen, onClose }) => {
           </li>
         </ol>
         
-        <h3 className="text-lg font-medium mb-2 text-white">Team Lineup Optimization (Monte Carlo Simulation)</h3>
-        <p className="mb-2 text-gray-300">To determine the best possible lineup for your team, we use Monte Carlo simulation to model all possible match outcomes:</p>
+        <h3 className="text-lg font-medium mb-2 text-white">Team Lineup Optimization (Hungarian Algorithm)</h3>
+        <p className="mb-2 text-gray-300">To determine the best possible combination of player matchups for your entire team, we implement the Hungarian Algorithm – a sophisticated mathematical approach used in assignment problems. Here's how it works:</p>
         <ol className="list-decimal list-inside mb-4 pl-2 text-gray-300">
-          <li className="mb-1"><span className="font-medium">Dynamic Simulations:</span> The system simulates hundreds of potential match scenarios:
+          <li className="mb-1"><span className="font-medium">Cost Matrix Creation:</span> The system builds a matrix where:
             <ul className="list-disc list-inside pl-6 mt-1">
-              <li>Optimizes for winning at least 2 matches</li>
-              <li>Accounts for game differential as a tiebreaker</li>
-              <li>Recalculates optimal strategy after each player selection</li>
+              <li>Each row represents one of your players</li>
+              <li>Each column represents an opponent</li>
+              <li>Each cell contains the "cost" (calculated as 1 minus the win probability)</li>
             </ul>
           </li>
-          <li className="mb-1"><span className="font-medium">Scenario Analysis:</span> The algorithm considers all possible opponent responses:
+          <li className="mb-1"><span className="font-medium">Optimal Assignment:</span> The Hungarian Algorithm finds the combination of assignments that minimizes the total cost, effectively:
             <ul className="list-disc list-inside pl-6 mt-1">
-              <li>Predicts the most likely opponent selections</li>
-              <li>Evaluates the overall match outcome for each scenario</li>
-              <li>Recommends the player selection that maximizes overall team win probability</li>
+              <li>Maximizing the team's overall win probability</li>
+              <li>Ensuring each player is matched against the opponent that creates the best team outcome</li>
+              <li>Finding the mathematically optimal solution among all possible combinations</li>
             </ul>
           </li>
-          <li className="mb-1"><span className="font-medium">Long-term Strategy:</span> Rather than optimizing each individual game in isolation, the system plans ahead to maximize final match win probability.</li>
+          <li className="mb-1"><span className="font-medium">Strategic Balance:</span> Rather than simply matching your best player against their best player, the algorithm may discover non-intuitive matchups that give your team the highest probability of overall success.</li>
         </ol>
         
         <h3 className="text-lg font-medium mb-2 text-white">The Calculation Process</h3>
-        <p className="mb-2 text-gray-300">After each selection, the system:</p>
+        <p className="mb-2 text-gray-300">For each potential lineup configuration, the system:</p>
         <ol className="list-decimal list-inside mb-4 pl-2 text-gray-300">
-          <li>Runs hundreds of simulated match completions</li>
-          <li>Evaluates the probability of winning at least 2 matches for each potential player selection</li>
-          <li>Recommends the player that maximizes overall team win probability</li>
+          <li>Calculates individual win probabilities for all possible player combinations</li>
+          <li>Applies the Hungarian Algorithm to find the globally optimal set of matchups</li>
+          <li>Recommends the lineup with the highest mathematical probability of team success</li>
         </ol>
         
-        <p className="mb-0 italic text-gray-300">This sophisticated approach goes beyond simple one-to-one matchup analysis, giving your team a significant strategic advantage by optimizing for overall match victory rather than individual game wins.</p>
+        <p className="mb-0 italic text-gray-300">This sophisticated approach goes far beyond simple one-to-one matchup analysis, giving your team a significant strategic advantage based on historical performance data and advanced mathematical optimization.</p>
       </div>
     </div>
   );
@@ -265,9 +265,254 @@ function SearchableDropdown({ options, value, onChange, placeholder, minChars = 
     </div>
   );
 }
-// -------------------- MONTE CARLO SIMULATION FUNCTIONS --------------------
 
-// Efficient function to create a shallow copy of an object that's sufficient for our needs
+// Helper function to make a matrix copy
+function makeMatrixCopy(matrix) {
+  return matrix.map(row => [...row]);
+}
+
+// Hungarian algorithm implementation
+function hungarianOptimalAssignment(matrix) {
+  if (!matrix || matrix.length === 0) return [];
+  
+  try {
+    // Make a deep copy of the cost matrix
+    const cost = makeMatrixCopy(matrix);
+    const m = cost.length;
+    const n = cost[0].length;
+    
+    // Step 1: Subtract row minima
+    for (let i = 0; i < m; i++) {
+      // Find minimum value in row
+      let minVal = Infinity;
+      for (let j = 0; j < n; j++) {
+        if (typeof cost[i][j] !== "number" || isNaN(cost[i][j])) {
+          cost[i][j] = 0.5; // Default to 0.5 if invalid
+        }
+
+        if (cost[i][j] < minVal) {
+          minVal = cost[i][j];
+        }
+      }
+
+      // Subtract minimum from each element in the row
+      if (minVal !== Infinity) {
+        for (let j = 0; j < n; j++) {
+          cost[i][j] -= minVal;
+        }
+      }
+    }
+
+    // Step 2: Subtract column minima
+    for (let j = 0; j < n; j++) {
+      // Find minimum value in column
+      let minVal = Infinity;
+      for (let i = 0; i < m; i++) {
+        if (cost[i][j] < minVal) {
+          minVal = cost[i][j];
+        }
+      }
+
+      // Subtract minimum from each element in the column
+      if (minVal !== Infinity) {
+        for (let i = 0; i < m; i++) {
+          cost[i][j] -= minVal;
+        }
+      }
+    }
+
+    // Initialize key data structures for the Hungarian algorithm
+    const rowCovered = Array(m).fill(false);
+    const colCovered = Array(n).fill(false);
+    const starMatrix = Array(m)
+      .fill()
+      .map(() => Array(n).fill(false));
+    const primeMatrix = Array(m)
+      .fill()
+      .map(() => Array(n).fill(false));
+
+    // Find all zeros and star them if possible
+    for (let i = 0; i < m; i++) {
+      for (let j = 0; j < n; j++) {
+        if (Math.abs(cost[i][j]) < 0.0001 && !rowCovered[i] && !colCovered[j]) {
+          starMatrix[i][j] = true;
+          rowCovered[i] = true;
+          colCovered[j] = true;
+        }
+      }
+    }
+
+    // Reset row and column covered arrays
+    rowCovered.fill(false);
+    colCovered.fill(false);
+
+    // Cover all columns containing starred zeros
+    for (let i = 0; i < m; i++) {
+      for (let j = 0; j < n; j++) {
+        if (starMatrix[i][j]) {
+          colCovered[j] = true;
+        }
+      }
+    }
+
+    // Main algorithm loop
+    while (colCovered.some((col) => !col)) {
+      // Find an uncovered zero
+      let row = -1,
+        col = -1;
+      for (let i = 0; i < m; i++) {
+        if (rowCovered[i]) continue;
+
+        for (let j = 0; j < n; j++) {
+          if (colCovered[j]) continue;
+
+          if (Math.abs(cost[i][j]) < 0.0001) {
+            row = i;
+            col = j;
+            break;
+          }
+        }
+
+        if (row !== -1) break;
+      }
+
+      // If no uncovered zero found, create new zeros by adjusting the matrix
+      if (row === -1) {
+        // Find the smallest uncovered value
+        let minVal = Infinity;
+        for (let i = 0; i < m; i++) {
+          if (rowCovered[i]) continue;
+
+          for (let j = 0; j < n; j++) {
+            if (colCovered[j]) continue;
+
+            if (cost[i][j] < minVal) {
+              minVal = cost[i][j];
+            }
+          }
+        }
+
+        // Add minValue to every covered row
+        for (let i = 0; i < m; i++) {
+          if (rowCovered[i]) {
+            for (let j = 0; j < n; j++) {
+              cost[i][j] += minVal;
+            }
+          }
+        }
+
+        // Subtract minValue from every uncovered column
+        for (let j = 0; j < n; j++) {
+          if (!colCovered[j]) {
+            for (let i = 0; i < m; i++) {
+              cost[i][j] -= minVal;
+            }
+          }
+        }
+
+        continue; // Continue the main loop
+      }
+
+      // Prime the found uncovered zero
+      primeMatrix[row][col] = true;
+
+      // Check if there is a starred zero in the row
+      let starCol = -1;
+      for (let j = 0; j < n; j++) {
+        if (starMatrix[row][j]) {
+          starCol = j;
+          break;
+        }
+      }
+
+      if (starCol === -1) {
+        // No starred zero in the row, we have an augmenting path
+        // Construct the augmenting path
+        const path = [[row, col]];
+
+        while (true) {
+          // Find a starred zero in the column
+          let starRow = -1;
+          for (let i = 0; i < m; i++) {
+            if (starMatrix[i][path[path.length - 1][1]]) {
+              starRow = i;
+              break;
+            }
+          }
+
+          if (starRow === -1) break; // No starred zero found, path is complete
+
+          // Add the starred zero to the path
+          path.push([starRow, path[path.length - 1][1]]);
+
+          // Find a primed zero in the row
+          let primeCol = -1;
+          for (let j = 0; j < n; j++) {
+            if (primeMatrix[starRow][j]) {
+              primeCol = j;
+              break;
+            }
+          }
+
+          // Add the primed zero to the path
+          path.push([starRow, primeCol]);
+        }
+
+        // Augment the path - convert starred to non-starred and vice versa
+        for (let i = 0; i < path.length; i++) {
+          const [pathRow, pathCol] = path[i];
+
+          if (starMatrix[pathRow][pathCol]) {
+            starMatrix[pathRow][pathCol] = false;
+          } else {
+            starMatrix[pathRow][pathCol] = true;
+          }
+        }
+
+        // Reset primeMatrix and coverings
+        for (let i = 0; i < m; i++) {
+          for (let j = 0; j < n; j++) {
+            primeMatrix[i][j] = false;
+          }
+        }
+
+        rowCovered.fill(false);
+        colCovered.fill(false);
+
+        // Cover columns with starred zeros
+        for (let i = 0; i < m; i++) {
+          for (let j = 0; j < n; j++) {
+            if (starMatrix[i][j]) {
+              colCovered[j] = true;
+            }
+          }
+        }
+      } else {
+        // There is a starred zero in the row
+        // Cover the row and uncover the column with the starred zero
+        rowCovered[row] = true;
+        colCovered[starCol] = false;
+      }
+    }
+
+    // Extract the assignments from the starred zeros
+    const hungarianAssignments = [];
+    for (let i = 0; i < m; i++) {
+      for (let j = 0; j < n; j++) {
+        if (starMatrix[i][j]) {
+          hungarianAssignments.push([i, j]);
+        }
+      }
+    }
+
+    return hungarianAssignments;
+  } catch (error) {
+    console.error("Error in Hungarian algorithm:", error);
+    return [];
+  }
+}
+
+// Efficient function to create a shallow copy of an object
 function cloneSelections(selections) {
   const clone = {};
   for (const gameKey in selections) {
@@ -287,26 +532,96 @@ function shouldHomePlayerSelectBlind(game, wonCoinFlip) {
     (gameNumber === 1 || gameNumber === 3);
 }
 
-// Random player selection for simulation
-function selectRandomPlayer(availablePlayers) {
-  if (!availablePlayers || availablePlayers.length === 0) return null;
-  return availablePlayers[Math.floor(Math.random() * availablePlayers.length)];
+// Calculate win rates by handicap level
+function calculateWinRatesByHandicap(playerName, allMatches) {
+  // Normalize names for case-insensitive comparison
+  const normalizePlayerName = (name) => name?.toLowerCase().trim() || "";
+  const playerNameNorm = normalizePlayerName(playerName);
+
+  const playerMatches = allMatches.filter(
+    (match) =>
+      (normalizePlayerName(match.homePlayer) === playerNameNorm ||
+        normalizePlayerName(match.awayPlayer) === playerNameNorm) &&
+      !match.forfeit,
+  );
+
+  const results = {
+    lower: { wins: 0, total: 0 },
+    equal: { wins: 0, total: 0 },
+    higher: { wins: 0, total: 0 },
+  };
+
+  playerMatches.forEach((match) => {
+    let playerHCP, opponentHCP, isWinner;
+
+    if (normalizePlayerName(match.homePlayer) === playerNameNorm) {
+      playerHCP = match.homeHCP;
+      opponentHCP = match.awayHCP;
+      isWinner = normalizePlayerName(match.winner) === playerNameNorm;
+    } else {
+      playerHCP = match.awayHCP;
+      opponentHCP = match.homeHCP;
+      isWinner = normalizePlayerName(match.winner) === playerNameNorm;
+    }
+
+    let category;
+    if (playerHCP < opponentHCP) {
+      category = "lower";
+    } else if (playerHCP === opponentHCP) {
+      category = "equal";
+    } else {
+      category = "higher";
+    }
+
+    results[category].total++;
+    if (isWinner) {
+      results[category].wins++;
+    }
+  });
+
+  // Calculate win rates
+  const winRates = {};
+  for (const [category, data] of Object.entries(results)) {
+    winRates[category] = data.total > 0 ? data.wins / data.total : 0;
+  }
+
+  return winRates;
 }
 
-// Simulate individual games within a match (best of 3)
-function simulateMatchGames(winProbability) {
-  let homeWins = 0;
-  let awayWins = 0;
-  
-  while (homeWins < 2 && awayWins < 2) {
-    if (Math.random() < winProbability) {
-      homeWins++;
-    } else {
-      awayWins++;
+// Get head-to-head record between two players
+function getHeadToHeadRecord(player1, player2, allMatches) {
+  // Normalize names for case-insensitive comparison
+  const normalizePlayerName = (name) => name?.toLowerCase().trim() || "";
+  const player1Norm = normalizePlayerName(player1);
+  const player2Norm = normalizePlayerName(player2);
+
+  const directMatches = allMatches.filter((match) => {
+    const homePlayerNorm = normalizePlayerName(match.homePlayer);
+    const awayPlayerNorm = normalizePlayerName(match.awayPlayer);
+
+    return (
+      ((homePlayerNorm === player1Norm && awayPlayerNorm === player2Norm) ||
+        (homePlayerNorm === player2Norm && awayPlayerNorm === player1Norm)) &&
+      !match.forfeit
+    );
+  });
+
+  const record = {
+    player1Wins: 0,
+    player2Wins: 0,
+    totalMatches: directMatches.length,
+  };
+
+  directMatches.forEach((match) => {
+    const winnerNorm = normalizePlayerName(match.winner);
+    if (winnerNorm === player1Norm) {
+      record.player1Wins++;
+    } else if (winnerNorm === player2Norm) {
+      record.player2Wins++;
     }
-  }
-  
-  return homeWins;
+  });
+
+  return record;
 }
 
 // Function to calculate win probability between two players
@@ -368,325 +683,183 @@ function calculateWinProbability(player1, player2, teamStats, allMatches) {
     handicapCategoryAdjustment));
 }
 
-// Calculate win rates by handicap level
-function calculateWinRatesByHandicap(playerName, allMatches) {
-  // Normalize names for case-insensitive comparison
-  const normalizePlayerName = (name) => name.toLowerCase().trim();
-  const playerNameNorm = normalizePlayerName(playerName);
-
-  const playerMatches = allMatches.filter(
-    (match) =>
-      (normalizePlayerName(match.homePlayer) === playerNameNorm ||
-        normalizePlayerName(match.awayPlayer) === playerNameNorm) &&
-      !match.forfeit,
-  );
-
-  const results = {
-    lower: { wins: 0, total: 0 },
-    equal: { wins: 0, total: 0 },
-    higher: { wins: 0, total: 0 },
-  };
-
-  playerMatches.forEach((match) => {
-    let playerHCP, opponentHCP, isWinner;
-
-    if (normalizePlayerName(match.homePlayer) === playerNameNorm) {
-      playerHCP = match.homeHCP;
-      opponentHCP = match.awayHCP;
-      isWinner = normalizePlayerName(match.winner) === playerNameNorm;
-    } else {
-      playerHCP = match.awayHCP;
-      opponentHCP = match.homeHCP;
-      isWinner = normalizePlayerName(match.winner) === playerNameNorm;
-    }
-
-    let category;
-    if (playerHCP < opponentHCP) {
-      category = "lower";
-    } else if (playerHCP === opponentHCP) {
-      category = "equal";
-    } else {
-      category = "higher";
-    }
-
-    results[category].total++;
-    if (isWinner) {
-      results[category].wins++;
-    }
-  });
-
-  // Calculate win rates
-  const winRates = {};
-  for (const [category, data] of Object.entries(results)) {
-    winRates[category] = data.total > 0 ? data.wins / data.total : 0;
-  }
-
-  return winRates;
-}
-
-// Get head-to-head record between two players
-function getHeadToHeadRecord(player1, player2, allMatches) {
-  // Normalize names for case-insensitive comparison
-  const normalizePlayerName = (name) => name.toLowerCase().trim();
-  const player1Norm = normalizePlayerName(player1);
-  const player2Norm = normalizePlayerName(player2);
-
-  const directMatches = allMatches.filter((match) => {
-    const homePlayerNorm = normalizePlayerName(match.homePlayer);
-    const awayPlayerNorm = normalizePlayerName(match.awayPlayer);
-
-    return (
-      ((homePlayerNorm === player1Norm && awayPlayerNorm === player2Norm) ||
-        (homePlayerNorm === player2Norm && awayPlayerNorm === player1Norm)) &&
-      !match.forfeit
-    );
-  });
-
-  const record = {
-    player1Wins: 0,
-    player2Wins: 0,
-    totalMatches: directMatches.length,
-  };
-
-  directMatches.forEach((match) => {
-    const winnerNorm = normalizePlayerName(match.winner);
-    if (winnerNorm === player1Norm) {
-      record.player1Wins++;
-    } else if (winnerNorm === player2Norm) {
-      record.player2Wins++;
-    }
-  });
-
-  return record;
-}
-
-// Simulate a complete match with given player selections
-function simulateMatchResults(selections, teamStats, allMatches) {
-  let homeMatchWins = 0;
-  let awayMatchWins = 0;
-  let homeGameWins = 0;
-  let awayGameWins = 0;
-  
-  // For each game
-  ["game1", "game2", "game3", "game4"].forEach(game => {
-    const homePlayer = selections[game].home;
-    const awayPlayer = selections[game].away;
-    
-    if (homePlayer && awayPlayer) {
-      const winProb = calculateWinProbability(homePlayer.name, awayPlayer.name, teamStats, allMatches);
-      
-      // Simulate the match outcome (assuming best of 3)
-      const homeWins = simulateMatchGames(winProb);
-      const awayWins = 3 - homeWins; // Assuming best of 3 format
-      
-      // Record game wins
-      homeGameWins += homeWins;
-      awayGameWins += awayWins;
-      
-      // Record match win
-      if (homeWins > awayWins) {
-        homeMatchWins++;
-      } else {
-        awayMatchWins++;
-      }
-    }
-  });
-  
-  // Determine overall winner
-  const homeTeamWins = 
-    homeMatchWins > 2 || (homeMatchWins === 2 && homeGameWins > awayGameWins);
-  
-  return {
-    homeTeamWins,
-    homeMatchWins,
-    awayMatchWins,
-    homeGameWins,
-    awayGameWins
-  };
-}
-
-// Simulate the remaining games after the current selection
-function simulateRemainingGames(
-  simulatedSelections,
-  remainingHomePlayers,
-  remainingAwayPlayers,
-  currentGame,
-  wonCoinFlip,
-  teamStats,
-  allMatches
-) {
-  const gameOrder = ["game1", "game2", "game3", "game4"];
-  const currentGameIndex = gameOrder.indexOf(currentGame);
-  
-  // Clone arrays to avoid modifying the originals during simulation
-  let homePlayers = [...remainingHomePlayers];
-  let awayPlayers = [...remainingAwayPlayers];
-  
-  // Simulate selections for all remaining games
-  for (let i = currentGameIndex + 1; i < gameOrder.length; i++) {
-    const game = gameOrder[i];
-    
-    // Apply selection logic based on coin flip result and game number
-    if (shouldHomePlayerSelectBlind(game, wonCoinFlip)) {
-      // Home team selects blind
-      const homePlayer = selectRandomPlayer(homePlayers);
-      if (homePlayer) {
-        simulatedSelections[game].home = homePlayer;
-        homePlayers = homePlayers.filter(p => p.name !== homePlayer.name);
-        
-        // Away team responds with best player
-        if (awayPlayers.length > 0) {
-          // Find player with lowest win probability against home player
-          let bestOpponent = null;
-          let lowestWinProb = 1;
-          
-          for (const player of awayPlayers) {
-            const winProb = calculateWinProbability(homePlayer.name, player.name, teamStats, allMatches);
-            if (winProb < lowestWinProb) {
-              lowestWinProb = winProb;
-              bestOpponent = player;
-            }
-          }
-          
-          if (bestOpponent) {
-            simulatedSelections[game].away = bestOpponent;
-            awayPlayers = awayPlayers.filter(p => p.name !== bestOpponent.name);
-          }
-        }
-      }
-    } else {
-      // Away team selects blind
-      const awayPlayer = selectRandomPlayer(awayPlayers);
-      if (awayPlayer) {
-        simulatedSelections[game].away = awayPlayer;
-        awayPlayers = awayPlayers.filter(p => p.name !== awayPlayer.name);
-        
-        // Home team responds with best player
-        if (homePlayers.length > 0) {
-          // Find player with highest win probability against away player
-          let bestPlayer = null;
-          let highestWinProb = 0;
-          
-          for (const player of homePlayers) {
-            const winProb = calculateWinProbability(player.name, awayPlayer.name, teamStats, allMatches);
-            if (winProb > highestWinProb) {
-              highestWinProb = winProb;
-              bestPlayer = player;
-            }
-          }
-          
-          if (bestPlayer) {
-            simulatedSelections[game].home = bestPlayer;
-            homePlayers = homePlayers.filter(p => p.name !== bestPlayer.name);
-          }
-        }
-      }
-    }
+// Find the optimal player selection for responding to an opponent's choice
+function findBestResponsePlayer(gameNumber, opponentPlayer, availableHomePlayers, availableAwayPlayers, selectedPlayers, teamStats, allMatches) {
+  // If only one player left, return them
+  if (availableHomePlayers.length === 1) {
+    return availableHomePlayers[0];
   }
   
-  return simulatedSelections;
-}
-
-// Main Monte Carlo simulation function
-function runMonteCarloSimulation(
-  availableHomePlayers,
-  availableAwayPlayers,
-  currentSelections,
-  currentGame,
-  wonCoinFlip,
-  teamStats,
-  allMatches,
-  iterations = 200
-) {
-  // Track results for different player choices
-  const playerResults = {};
+  // Get remaining away players (excluding the selected opponent)
+  const remainingAwayPlayers = availableAwayPlayers.filter(p => p.name !== opponentPlayer.name);
   
-  // For each possible player we could select
+  // If this is the last game (no remaining opponents), simply find best matchup
+  if (remainingAwayPlayers.length === 0) {
+    let bestPlayer = null;
+    let highestWinProb = -1;
+    
+    for (const homePlayer of availableHomePlayers) {
+      const winProb = calculateWinProbability(
+        homePlayer.name,
+        opponentPlayer.name,
+        teamStats,
+        allMatches
+      );
+      
+      if (winProb > highestWinProb) {
+        highestWinProb = winProb;
+        bestPlayer = homePlayer;
+      }
+    }
+    
+    return bestPlayer;
+  }
+  
+  // Create cost matrix for Hungarian algorithm
+  const costMatrix = [];
+  
   for (const homePlayer of availableHomePlayers) {
-    playerResults[homePlayer.name] = {
-      matchWins: 0,
-      gameWins: 0,
-      totalSimulations: 0,
-      player: homePlayer
-    };
+    const row = [];
     
-    // Create a copy of available players for simulation
-    const remainingHomePlayers = availableHomePlayers.filter(p => p.name !== homePlayer.name);
+    // First column is for the current opponent player
+    const winProb = calculateWinProbability(
+      homePlayer.name,
+      opponentPlayer.name,
+      teamStats,
+      allMatches
+    );
+    row.push(1 - winProb); // Convert to cost
     
-    // Run multiple simulations with this player choice
-    for (let i = 0; i < iterations; i++) {
-      // Create a copy of current selections to simulate this scenario
-      const simulatedSelections = cloneSelections(currentSelections);
-      
-      // Add this player as our choice for current game
-      simulatedSelections[currentGame].home = homePlayer;
-      
-      // Simulation differs based on blind vs. response
-      if (shouldHomePlayerSelectBlind(currentGame, wonCoinFlip)) {
-        // Home team selects blind, so simulate opponent's response
-        // Find best opponent against our player (lowest win probability)
-        if (availableAwayPlayers.length > 0) {
-          let bestOpponent = null;
-          let lowestWinProb = 1;
-          
-          for (const player of availableAwayPlayers) {
-            const winProb = calculateWinProbability(homePlayer.name, player.name, teamStats, allMatches);
-            if (winProb < lowestWinProb) {
-              lowestWinProb = winProb;
-              bestOpponent = player;
-            }
-          }
-          
-          if (bestOpponent) {
-            simulatedSelections[currentGame].away = bestOpponent;
-            // Simulate remaining games
-            const remainingAwayPlayers = availableAwayPlayers.filter(p => p.name !== bestOpponent.name);
-            simulateRemainingGames(
-              simulatedSelections,
-              remainingHomePlayers,
-              remainingAwayPlayers,
-              currentGame,
-              wonCoinFlip,
-              teamStats,
-              allMatches
-            );
-          }
-        }
-      } else {
-        // Home team responds to opponent's blind selection
-        // Randomly select an opponent player (since we don't know who they'll choose)
-        const randomOpponent = selectRandomPlayer(availableAwayPlayers);
-        
-        if (randomOpponent) {
-          simulatedSelections[currentGame].away = randomOpponent;
-          // Simulate remaining games
-          const remainingAwayPlayers = availableAwayPlayers.filter(p => p.name !== randomOpponent.name);
-          simulateRemainingGames(
-            simulatedSelections,
-            remainingHomePlayers,
-            remainingAwayPlayers,
-            currentGame,
-            wonCoinFlip,
-            teamStats,
-            allMatches
-          );
-        }
-      }
-      
-      // Calculate the match result
-      const matchResult = simulateMatchResults(simulatedSelections, teamStats, allMatches);
-      
-      // Track results
-      if (matchResult.homeTeamWins) playerResults[homePlayer.name].matchWins++;
-      playerResults[homePlayer.name].gameWins += matchResult.homeGameWins;
-      playerResults[homePlayer.name].totalSimulations++;
+    // Add columns for remaining opponent players
+    for (const awayPlayer of remainingAwayPlayers) {
+      const winProb = calculateWinProbability(
+        homePlayer.name,
+        awayPlayer.name,
+        teamStats,
+        allMatches
+      );
+      row.push(1 - winProb);
+    }
+    
+    costMatrix.push(row);
+  }
+  
+  // Add dummy rows if needed to make the matrix square
+  while (costMatrix.length < 1 + remainingAwayPlayers.length) {
+    const dummyRow = Array(1 + remainingAwayPlayers.length).fill(1); // High cost for dummy assignments
+    costMatrix.push(dummyRow);
+  }
+  
+  // Run Hungarian algorithm
+  const assignments = hungarianOptimalAssignment(costMatrix);
+  
+  // Find which home player is assigned to the current opponent (column 0)
+  let selectedHomePlayerIndex = -1;
+  for (const [rowIdx, colIdx] of assignments) {
+    if (colIdx === 0 && rowIdx < availableHomePlayers.length) {
+      selectedHomePlayerIndex = rowIdx;
+      break;
     }
   }
   
-  return playerResults;
+  // Fallback to best direct matchup if no assignment found
+  if (selectedHomePlayerIndex === -1) {
+    let bestPlayer = null;
+    let highestWinProb = -1;
+    
+    for (const homePlayer of availableHomePlayers) {
+      const winProb = calculateWinProbability(
+        homePlayer.name,
+        opponentPlayer.name,
+        teamStats,
+        allMatches
+      );
+      
+      if (winProb > highestWinProb) {
+        highestWinProb = winProb;
+        bestPlayer = homePlayer;
+      }
+    }
+    
+    return bestPlayer;
+  }
+  
+  return availableHomePlayers[selectedHomePlayerIndex];
 }
 
-// -------------------- MAIN APP COMPONENT --------------------
+// Find optimal blind selection player
+function findOptimalBlindPlayer(availableHomePlayers, availableAwayPlayers, teamStats, allMatches) {
+  // If only one player left, return them
+  if (availableHomePlayers.length === 1) {
+    return availableHomePlayers[0];
+  }
+  
+  // If no opponents left (shouldn't happen), return any player
+  if (availableAwayPlayers.length === 0) {
+    return availableHomePlayers[0];
+  }
+  
+  // Create cost matrix for all remaining player combinations
+  const costMatrix = [];
+  
+  for (const homePlayer of availableHomePlayers) {
+    const row = [];
+    
+    for (const awayPlayer of availableAwayPlayers) {
+      const winProb = calculateWinProbability(
+        homePlayer.name,
+        awayPlayer.name,
+        teamStats,
+        allMatches
+      );
+      row.push(1 - winProb); // Convert to cost
+    }
+    
+    costMatrix.push(row);
+  }
+  
+  // Add dummy rows if needed to make the matrix square
+  while (costMatrix.length < availableAwayPlayers.length) {
+    const dummyRow = Array(availableAwayPlayers.length).fill(1); // High cost for dummy assignments
+    costMatrix.push(dummyRow);
+  }
+  
+  // Run Hungarian algorithm
+  const assignments = hungarianOptimalAssignment(costMatrix);
+  
+  // Calculate expected value for each player
+  const playerScores = {};
+  
+  // Initialize with average win probability
+  for (const homePlayer of availableHomePlayers) {
+    const avgWinProb = availableAwayPlayers.reduce((sum, awayPlayer) => {
+      return sum + calculateWinProbability(
+        homePlayer.name,
+        awayPlayer.name,
+        teamStats,
+        allMatches
+      );
+    }, 0) / availableAwayPlayers.length;
+    
+    playerScores[homePlayer.name] = {
+      player: homePlayer,
+      score: avgWinProb
+    };
+  }
+  
+  // Find the optimal player (one with highest average win probability)
+  let bestPlayer = null;
+  let bestScore = -1;
+  
+  for (const [playerName, data] of Object.entries(playerScores)) {
+    if (data.score > bestScore) {
+      bestScore = data.score;
+      bestPlayer = data.player;
+    }
+  }
+  
+  return bestPlayer;
+}
 
 function App() {
   // UI state
@@ -699,7 +872,6 @@ function App() {
   const [allMatches, setAllMatches] = useState([]);
   const [teamStats, setTeamStats] = useState([]);
   const [teams, setTeams] = useState([]);
-  const [simulations, setSimulations] = useState({});
   const [optimalPlayer, setOptimalPlayer] = useState(null);
   
   // Team selection states
@@ -719,9 +891,6 @@ function App() {
     game3: { home: null, away: null },
     game4: { home: null, away: null },
   });
-  
-  // Configuration
-  const SIMULATION_COUNT = 200;
 
   // Load data on component mount
   useEffect(() => {
@@ -784,66 +953,49 @@ function App() {
     }
   }, [selectedAwayTeam, teamStats]);
 
-  // Run Monte Carlo when entering a game selection step
+  // Calculate optimal player for blind selection
   useEffect(() => {
-    if (currentStep.startsWith("game-") && 
-        !currentStep.includes("opponent") && 
-        !isCalculating && 
-        availableHomePlayers.length > 0 && 
-        availableAwayPlayers.length > 0) {
-      runOptimalStrategyCalculation();
+    if (
+      currentStep.startsWith("game-") && 
+      !currentStep.includes("opponent") && 
+      !isCalculating && 
+      availableHomePlayers.length > 0 && 
+      availableAwayPlayers.length > 0
+    ) {
+      calculateOptimalPlayer();
     }
   }, [currentStep, availableHomePlayers, availableAwayPlayers]);
 
-  // Run Monte Carlo simulations to find optimal strategy
-  const runOptimalStrategyCalculation = () => {
+  // Calculate the optimal player for blind selection
+  const calculateOptimalPlayer = () => {
     setIsCalculating(true);
-    
-    // Use setTimeout to prevent UI freezing
     setTimeout(() => {
-      const results = runMonteCarloSimulation(
+      const optimalPlayer = findOptimalBlindPlayer(
         availableHomePlayers,
         availableAwayPlayers,
-        selectedPlayers,
-        getCurrentGame(),
-        wonCoinFlip,
         teamStats,
-        allMatches,
-        SIMULATION_COUNT
+        allMatches
       );
-      
-      setSimulations(results);
-      
-      // Find the best player
-      let bestPlayer = null;
-      let bestWinRate = -1;
-      
-      for (const [playerName, result] of Object.entries(results)) {
-        const winRate = result.matchWins / result.totalSimulations;
-        if (winRate > bestWinRate) {
-          bestWinRate = winRate;
-          bestPlayer = result.player;
-        }
-      }
-      
-      setOptimalPlayer(bestPlayer);
+      setOptimalPlayer(optimalPlayer);
       setIsCalculating(false);
-    }, 50);
+    }, 0);
   };
-  
-  // Helper to get current game from step
-  const getCurrentGame = () => {
+
+  // Helper to get current game number from step
+  const getCurrentGameNumber = () => {
     if (currentStep.startsWith("game-")) {
-      const gamePart = currentStep.split("-")[1];
-      if (gamePart && !isNaN(parseInt(gamePart))) {
-        return `game${parseInt(gamePart)}`;
+      const parts = currentStep.split("-");
+      if (parts.length >= 2 && !isNaN(parseInt(parts[1]))) {
+        return parseInt(parts[1]);
       }
     }
-    return "game1"; // Default
+    return 1; // Default
   };
 
   // Function to choose player for a game
   const selectPlayerForGame = (game, team, player) => {
+    console.log(`Selecting ${team} player for ${game}:`, player.name);
+
     // Update selected players
     setSelectedPlayers(prev => ({
       ...prev,
@@ -859,11 +1011,9 @@ function App() {
       
       // Special cases for blind selections - redirect to opponent selection screens
       if ((!wonCoinFlip && (game === "game1" || game === "game3")) || 
-        (wonCoinFlip && (game === "game2" || game === "game4"))) {
-        // Change from:
-        // setCurrentStep(`${game}-opponent`);
-        // To:
-        setCurrentStep(`game-${game.substring(4)}-opponent`);
+          (wonCoinFlip && (game === "game2" || game === "game4"))) {
+        const gameNumber = parseInt(game.replace("game", ""));
+        setCurrentStep(`game-${gameNumber}-opponent`);
         return;
       }
     } else {
@@ -871,25 +1021,6 @@ function App() {
     }
 
     // Move to next step for all other cases
-    const gameNumber = parseInt(game.replace("game", ""));
-    setCurrentStep(gameNumber < 4 ? `game-${gameNumber + 1}` : "summary");
-  };
-
-  // Handle opponent selection
-  const handleOpponentSelection = (game, player) => {
-    // Update selected players
-    setSelectedPlayers(prev => ({
-      ...prev,
-      [game]: {
-        ...prev[game],
-        away: player,
-      },
-    }));
-
-    // Remove player from available list
-    setAvailableAwayPlayers(prev => prev.filter(p => p.name !== player.name));
-    
-    // Move to next game or summary
     const gameNumber = parseInt(game.replace("game", ""));
     setCurrentStep(gameNumber < 4 ? `game-${gameNumber + 1}` : "summary");
   };
@@ -912,9 +1043,60 @@ function App() {
   // Step 2: Coin flip result
   const handleCoinFlipResult = (won) => {
     setWonCoinFlip(won);
-    setSimulations({});
-    setOptimalPlayer(null);
     setCurrentStep("game-1");
+  };
+
+  // Handle opponent selection and find best response
+  const handleOpponentSelection = (gameNum, player) => {
+    const game = `game${gameNum}`;
+    setIsCalculating(true);
+    
+    // Update state with opponent selection
+    setSelectedPlayers(prev => ({
+      ...prev,
+      [game]: {
+        ...prev[game],
+        away: player,
+      },
+    }));
+    
+    // Remove player from available opponents
+    const remainingAwayPlayers = availableAwayPlayers.filter(p => p.name !== player.name);
+    setAvailableAwayPlayers(remainingAwayPlayers);
+    
+    // Find best player using Hungarian algorithm to consider future games
+    setTimeout(() => {
+      const bestPlayer = findBestResponsePlayer(
+        gameNum,
+        player,
+        availableHomePlayers,
+        remainingAwayPlayers,
+        selectedPlayers,
+        teamStats,
+        allMatches
+      );
+      
+      if (bestPlayer) {
+        // Update state with our player selection
+        setSelectedPlayers(prev => ({
+          ...prev,
+          [game]: {
+            home: bestPlayer,
+            away: player,
+          },
+        }));
+        
+        // Remove player from available list
+        setAvailableHomePlayers(prev => prev.filter(p => p.name !== bestPlayer.name));
+        
+        // Move to next game or summary
+        setCurrentStep(gameNum < 4 ? `game-${gameNum + 1}` : "summary");
+      } else {
+        // Handle error case
+        console.error("Could not find optimal player");
+        setIsCalculating(false);
+      }
+    }, 0);
   };
 
   // Reset everything and start over
@@ -933,7 +1115,6 @@ function App() {
       game3: { home: null, away: null },
       game4: { home: null, away: null },
     });
-    setSimulations({});
     setOptimalPlayer(null);
     setIsCalculating(false);
   };
@@ -971,7 +1152,7 @@ function App() {
               <div
                 key={`opponent-player-${player.name}`}
                 className="p-4 border rounded-lg cursor-pointer hover:bg-blue-100"
-                onClick={() => handleOpponentSelection(game, player)}
+                onClick={() => handleOpponentSelection(gameNumber, player)}
               >
                 <div className="font-medium">{player.displayName}</div>
                 <div className="text-sm text-gray-600">
@@ -1208,6 +1389,12 @@ function App() {
     );
   }
 
+  // Render Game 1-4 opponent selection screens
+  if (currentStep.match(/^game-\d-opponent$/)) {
+    const gameNumber = parseInt(currentStep.split('-')[1]);
+    return renderOpponentSelectionScreen(gameNumber);
+  }
+
   // Render Game 1 selection
   if (currentStep === "game-1") {
     // Loser of coin flip puts up blind for game 1
@@ -1229,118 +1416,24 @@ function App() {
             </p>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {availableAwayPlayers.map((player) => {
-                // Start Monte Carlo simulation when opponent player selected
-                const simulateMatchup = () => {
-                  setIsCalculating(true);
-                  
-                  // Instead of calling handleOpponentSelection right away, just update the state
-                  setSelectedPlayers(prev => ({
-                    ...prev,
-                    game1: {
-                      ...prev.game1,
-                      away: player, // Set the opponent player
-                    },
-                  }));
-                  
-                  // Remove player from available opponents locally for the simulation
-                  const remainingAwayPlayers = availableAwayPlayers.filter(p => p.name !== player.name);
-                  setAvailableAwayPlayers(remainingAwayPlayers);
-                  
-                  // Run quick simulation to find best player against this opponent
-                  setTimeout(() => {
-                    // Create a mini-simulation for each of our players against this opponent
-                    const playerResults = {};
-                    
-                    for (const homePlayer of availableHomePlayers) {
-                      // Simulate match outcomes with this pairing
-                      let matchWins = 0;
-                      const simCount = 50; // Quick response simulation
-                      
-                      for (let i = 0; i < simCount; i++) {
-                        // Create temporary game selections
-                        const tempSelections = cloneSelections(selectedPlayers);
-                        tempSelections.game1 = { home: homePlayer, away: player };
-                        
-                        // Simulate remaining games
-                        const remainingHomePlayers = availableHomePlayers.filter(p => p.name !== homePlayer.name);
-                        simulateRemainingGames(
-                          tempSelections,
-                          remainingHomePlayers,
-                          remainingAwayPlayers,
-                          "game1",
-                          wonCoinFlip,
-                          teamStats,
-                          allMatches
-                        );
-                        
-                        // Calculate match results
-                        const result = simulateMatchResults(tempSelections, teamStats, allMatches);
-                        if (result.homeTeamWins) {
-                          matchWins++;
-                        }
-                      }
-                      
-                      // Record win probability
-                      playerResults[homePlayer.name] = {
-                        player: homePlayer,
-                        winProb: matchWins / simCount
-                      };
-                    }
-                    
-                    // Find best player
-                    let bestPlayer = null;
-                    let bestWinProb = -1;
-                    
-                    for (const [name, result] of Object.entries(playerResults)) {
-                      if (result.winProb > bestWinProb) {
-                        bestWinProb = result.winProb;
-                        bestPlayer = result.player;
-                      }
-                    }
-                    
-                    if (bestPlayer) {
-                      // Update the selected players with both selections at once
-                      setSelectedPlayers(prev => ({
-                        ...prev,
-                        game1: {
-                          home: bestPlayer,
-                          away: player,
-                        },
-                      }));
-                      
-                      // Remove the home player from available list
-                      setAvailableHomePlayers(prev => prev.filter(p => p.name !== bestPlayer.name));
-                      
-                      // Only AFTER all state updates, move to the next game
-                      setCurrentStep("game-2");
-                    } else {
-                      // Handle error case - no best player found
-                      setIsCalculating(false);
-                      alert("Could not find an optimal player selection. Please try again.");
-                    }
-                  }, 100); // Slightly longer timeout for better UI responsiveness
-                };
-                
-                return (
-                  <div
-                    key={`select-opponent-${player.name}`}
-                    className="p-4 border rounded-lg cursor-pointer hover:bg-blue-100"
-                    onClick={simulateMatchup}
-                  >
-                    <div className="font-medium">{player.displayName}</div>
-                    <div className="text-sm text-gray-600">
-                      HCP: {player.handicap}
-                    </div>
-                    <div className="mt-2">
-                      <div className="text-sm">Record:</div>
-                      <div className="text-sm mt-1">
-                        {player.wins}-{player.losses} ({player.winPercentage}%)
-                      </div>
+              {availableAwayPlayers.map((player) => (
+                <div
+                  key={`select-opponent-${player.name}`}
+                  className="p-4 border rounded-lg cursor-pointer hover:bg-blue-100"
+                  onClick={() => handleOpponentSelection(1, player)}
+                >
+                  <div className="font-medium">{player.displayName}</div>
+                  <div className="text-sm text-gray-600">
+                    HCP: {player.handicap}
+                  </div>
+                  <div className="mt-2">
+                    <div className="text-sm">Record:</div>
+                    <div className="text-sm mt-1">
+                      {player.wins}-{player.losses} ({player.winPercentage}%)
                     </div>
                   </div>
-                );
-              })}
+                </div>
+              ))}
             </div>
           </div>
 
@@ -1372,7 +1465,7 @@ function App() {
             
             {isCalculating ? (
               <div className="text-center py-4">
-                <p>Calculating optimal strategy...</p>
+                <p>Finding optimal player...</p>
                 <div className="mt-2 w-full h-2 bg-gray-200 rounded-full overflow-hidden">
                   <div className="h-full bg-blue-500 animate-pulse"></div>
                 </div>
@@ -1380,19 +1473,23 @@ function App() {
             ) : (
               <>
                 <p className="mb-4">
-                  Recommended player:{" "}
+                  Recommended player based on Hungarian algorithm analysis:{" "}
                   <span className="font-bold">
                     {optimalPlayer?.displayName || "Calculating..."}
                   </span>
                 </p>
-                <p className="text-sm mb-6">
-                  This recommendation is based on Monte Carlo simulation of {SIMULATION_COUNT} possible match outcomes.
-                </p>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {availableHomePlayers.map((player) => {
-                    const playerSimResults = simulations[player.name] || {};
-                    const winProb = playerSimResults.matchWins / (playerSimResults.totalSimulations || 1);
+                    // Calculate average win probability against all opponents
+                    const avgWinProb = availableAwayPlayers.reduce((sum, opponent) => {
+                      return sum + calculateWinProbability(
+                        player.name,
+                        opponent.name,
+                        teamStats,
+                        allMatches
+                      );
+                    }, 0) / Math.max(1, availableAwayPlayers.length);
                     
                     return (
                       <div
@@ -1409,16 +1506,16 @@ function App() {
                           HCP: {player.handicap}
                         </div>
                         <div className="mt-2">
-                          <div className="text-sm">Team win probability:</div>
+                          <div className="text-sm">Average win probability:</div>
                           <div className="flex items-center mt-1">
                             <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden mr-2">
                               <div
                                 className="h-full bg-green-500"
-                                style={{ width: `${winProb * 100}%` }}
+                                style={{ width: `${avgWinProb * 100}%` }}
                               ></div>
                             </div>
                             <span className="font-medium">
-                              {Math.round(winProb * 100)}%
+                              {Math.round(avgWinProb * 100)}%
                             </span>
                           </div>
                         </div>
@@ -1443,10 +1540,20 @@ function App() {
     }
   }
 
-  // Render Game 2 selection
-  if (currentStep === "game-2") {
-    if (wonCoinFlip) {
-      // We won the coin flip, we choose player for game 1 and put up blind for game 2
+  // Render Game 2, 3, 4 selection with similar pattern
+  // For each game x where x is 2, 3, or 4:
+  // - If wonCoinFlip && (x is 2 or 4): we put up blind
+  // - If !wonCoinFlip && (x is 1 or 3): we put up blind
+  // - Otherwise: opponent puts up blind, we respond
+  // This function generates the render logic for games 2, 3, and 4
+  const renderGameSelection = (gameNum) => {
+    const game = `game${gameNum}`;
+    const weSelectBlind = 
+      (wonCoinFlip && (gameNum === 2 || gameNum === 4)) || 
+      (!wonCoinFlip && (gameNum === 1 || gameNum === 3));
+
+    if (weSelectBlind) {
+      // We put up blind
       return (
         <div className="container mx-auto p-4">
           <FloatingInfoButton onClick={() => setShowInfoPopup(true)} />
@@ -1456,14 +1563,14 @@ function App() {
           </h1>
 
           <div className="bg-blue-50 p-6 rounded-lg mb-8">
-            <h2 className="text-xl font-semibold mb-4">Game 2 Selection</h2>
+            <h2 className="text-xl font-semibold mb-4">Game {gameNum} Selection</h2>
             <p className="mb-4">
-              You need to put up a player blind for Game 2.
+              You need to put up a player blind for Game {gameNum}.
             </p>
             
             {isCalculating ? (
               <div className="text-center py-4">
-                <p>Running Monte Carlo simulations...</p>
+                <p>Finding optimal player...</p>
                 <div className="mt-2 w-full h-2 bg-gray-200 rounded-full overflow-hidden">
                   <div className="h-full bg-blue-500 animate-pulse"></div>
                 </div>
@@ -1471,19 +1578,23 @@ function App() {
             ) : (
               <>
                 <p className="mb-4">
-                  Recommended player:{" "}
+                  Recommended player based on Hungarian algorithm analysis:{" "}
                   <span className="font-bold">
                     {optimalPlayer?.displayName || "Calculating..."}
                   </span>
                 </p>
-                <p className="text-sm mb-6">
-                  This recommendation is based on {SIMULATION_COUNT} simulated match outcomes.
-                </p>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {availableHomePlayers.map((player) => {
-                    const playerSimResults = simulations[player.name] || {};
-                    const winProb = playerSimResults.matchWins / (playerSimResults.totalSimulations || 1);
+                    // Calculate average win probability against all opponents
+                    const avgWinProb = availableAwayPlayers.reduce((sum, opponent) => {
+                      return sum + calculateWinProbability(
+                        player.name,
+                        opponent.name,
+                        teamStats,
+                        allMatches
+                      );
+                    }, 0) / Math.max(1, availableAwayPlayers.length);
                     
                     return (
                       <div
@@ -1493,23 +1604,23 @@ function App() {
                             ? "bg-green-50 border-green-500"
                             : ""
                         }`}
-                        onClick={() => selectPlayerForGame("game2", "home", player)}
+                        onClick={() => selectPlayerForGame(game, "home", player)}
                       >
                         <div className="font-medium">{player.displayName}</div>
                         <div className="text-sm text-gray-600">
                           HCP: {player.handicap}
                         </div>
                         <div className="mt-2">
-                          <div className="text-sm">Team win probability:</div>
+                          <div className="text-sm">Average win probability:</div>
                           <div className="flex items-center mt-1">
                             <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden mr-2">
                               <div
                                 className="h-full bg-green-500"
-                                style={{ width: `${winProb * 100}%` }}
+                                style={{ width: `${avgWinProb * 100}%` }}
                               ></div>
                             </div>
                             <span className="font-medium">
-                              {Math.round(winProb * 100)}%
+                              {Math.round(avgWinProb * 100)}%
                             </span>
                           </div>
                         </div>
@@ -1532,7 +1643,7 @@ function App() {
         </div>
       );
     } else {
-      // We lost the coin flip, opponent chooses player for game 2
+      // Opponent puts up blind, we respond
       return (
         <div className="container mx-auto p-4">
           <FloatingInfoButton onClick={() => setShowInfoPopup(true)} />
@@ -1542,124 +1653,30 @@ function App() {
           </h1>
 
           <div className="bg-blue-50 p-6 rounded-lg mb-8">
-            <h2 className="text-xl font-semibold mb-4">Game 2 Selection</h2>
+            <h2 className="text-xl font-semibold mb-4">Game {gameNum} Selection</h2>
             <p className="mb-4">
-              The opponent selects a player for Game 2. Which player did they choose?
+              The opponent selects a player for Game {gameNum}. Which player did they choose?
             </p>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {availableAwayPlayers.map((player) => {
-                // Start Monte Carlo simulation when opponent player selected
-                const simulateMatchup = () => {
-                  setIsCalculating(true);
-                  
-                  // Instead of calling handleOpponentSelection right away, just update the state
-                  setSelectedPlayers(prev => ({
-                    ...prev,
-                    game2: {
-                      ...prev.game2,
-                      away: player, // Set the opponent player
-                    },
-                  }));
-                  
-                  // Remove player from available opponents locally for the simulation
-                  const remainingAwayPlayers = availableAwayPlayers.filter(p => p.name !== player.name);
-                  setAvailableAwayPlayers(remainingAwayPlayers);
-                  
-                  // Run quick simulation to find best player against this opponent
-                  setTimeout(() => {
-                    // Create a mini-simulation for each of our players against this opponent
-                    const playerResults = {};
-                    
-                    for (const homePlayer of availableHomePlayers) {
-                      // Simulate match outcomes with this pairing
-                      let matchWins = 0;
-                      const simCount = 50; // Quick response simulation
-                      
-                      for (let i = 0; i < simCount; i++) {
-                        // Create temporary game selections
-                        const tempSelections = cloneSelections(selectedPlayers);
-                        tempSelections.game2 = { home: homePlayer, away: player };
-                        
-                        // Simulate remaining games
-                        const remainingHomePlayers = availableHomePlayers.filter(p => p.name !== homePlayer.name);
-                        simulateRemainingGames(
-                          tempSelections,
-                          remainingHomePlayers,
-                          remainingAwayPlayers,
-                          "game2",
-                          wonCoinFlip,
-                          teamStats,
-                          allMatches
-                        );
-                        
-                        // Calculate match results
-                        const result = simulateMatchResults(tempSelections, teamStats, allMatches);
-                        if (result.homeTeamWins) {
-                          matchWins++;
-                        }
-                      }
-                      
-                      // Record win probability
-                      playerResults[homePlayer.name] = {
-                        player: homePlayer,
-                        winProb: matchWins / simCount
-                      };
-                    }
-                    
-                    // Find best player
-                    let bestPlayer = null;
-                    let bestWinProb = -1;
-                    
-                    for (const [name, result] of Object.entries(playerResults)) {
-                      if (result.winProb > bestWinProb) {
-                        bestWinProb = result.winProb;
-                        bestPlayer = result.player;
-                      }
-                    }
-                    
-                    if (bestPlayer) {
-                      // Update the selected players with both selections at once
-                      setSelectedPlayers(prev => ({
-                        ...prev,
-                        game2: {
-                          home: bestPlayer,
-                          away: player,
-                        },
-                      }));
-                      
-                      // Remove the home player from available list
-                      setAvailableHomePlayers(prev => prev.filter(p => p.name !== bestPlayer.name));
-                      
-                      // Only AFTER all state updates, move to the next game
-                      setCurrentStep("game-3");
-                    } else {
-                      // Handle error case - no best player found
-                      setIsCalculating(false);
-                      alert("Could not find an optimal player selection. Please try again.");
-                    }
-                  }, 100); // Slightly longer timeout for better UI responsiveness
-                };
-                
-                return (
-                  <div
-                    key={`select-opponent-${player.name}`}
-                    className="p-4 border rounded-lg cursor-pointer hover:bg-blue-100"
-                    onClick={simulateMatchup}
-                  >
-                    <div className="font-medium">{player.displayName}</div>
-                    <div className="text-sm text-gray-600">
-                      HCP: {player.handicap}
-                    </div>
-                    <div className="mt-2">
-                      <div className="text-sm">Record:</div>
-                      <div className="text-sm mt-1">
-                        {player.wins}-{player.losses} ({player.winPercentage}%)
-                      </div>
+              {availableAwayPlayers.map((player) => (
+                <div
+                  key={`select-opponent-${player.name}`}
+                  className="p-4 border rounded-lg cursor-pointer hover:bg-blue-100"
+                  onClick={() => handleOpponentSelection(gameNum, player)}
+                >
+                  <div className="font-medium">{player.displayName}</div>
+                  <div className="text-sm text-gray-600">
+                    HCP: {player.handicap}
+                  </div>
+                  <div className="mt-2">
+                    <div className="text-sm">Record:</div>
+                    <div className="text-sm mt-1">
+                      {player.wins}-{player.losses} ({player.winPercentage}%)
                     </div>
                   </div>
-                );
-              })}
+                </div>
+              ))}
             </div>
           </div>
 
@@ -1674,366 +1691,39 @@ function App() {
         </div>
       );
     }
-  }
+  };
 
-  // Render Game 3 selection
-  if (currentStep === "game-3") {
-    if (wonCoinFlip) {
-      // We won the coin flip, opponent puts up blind for game 3
-      return (
-        <div className="container mx-auto p-4">
-          <FloatingInfoButton onClick={() => setShowInfoPopup(true)} />
-          <InfoPopup isOpen={showInfoPopup} onClose={() => setShowInfoPopup(false)} />
-          <h1 className="text-3xl font-bold mb-6 text-center">
-            Pool Team Stats Analyzer
-          </h1>
+  // Render Game 2-4 selection screens
+  if (currentStep === "game-2") return renderGameSelection(2);
+  if (currentStep === "game-3") return renderGameSelection(3);
+  if (currentStep === "game-4") return renderGameSelection(4);
 
-          <div className="bg-blue-50 p-6 rounded-lg mb-8">
-            <h2 className="text-xl font-semibold mb-4">Game 3 Selection</h2>
-            <p className="mb-4">
-              The opponent puts up a player blind for Game 3. Which player did they choose?
-            </p>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {availableAwayPlayers.map((player) => {
-                // Start Monte Carlo simulation when opponent player selected
-                const simulateMatchup = () => {
-                  setIsCalculating(true);
-                  
-                  // Instead of calling handleOpponentSelection right away, just update the state
-                  setSelectedPlayers(prev => ({
-                    ...prev,
-                    game3: {
-                      ...prev.game3,
-                      away: player, // Set the opponent player
-                    },
-                  }));
-                  
-                  // Remove player from available opponents locally for the simulation
-                  const remainingAwayPlayers = availableAwayPlayers.filter(p => p.name !== player.name);
-                  setAvailableAwayPlayers(remainingAwayPlayers);
-                  
-                  // Run quick simulation to find best player against this opponent
-                  setTimeout(() => {
-                    // Create a mini-simulation for each of our players against this opponent
-                    const playerResults = {};
-                    
-                    for (const homePlayer of availableHomePlayers) {
-                      // Simulate match outcomes with this pairing
-                      let matchWins = 0;
-                      const simCount = 50; // Quick response simulation
-                      
-                      for (let i = 0; i < simCount; i++) {
-                        // Create temporary game selections
-                        const tempSelections = cloneSelections(selectedPlayers);
-                        tempSelections.game3 = { home: homePlayer, away: player };
-                        
-                        // Simulate remaining games
-                        const remainingHomePlayers = availableHomePlayers.filter(p => p.name !== homePlayer.name);
-                        simulateRemainingGames(
-                          tempSelections,
-                          remainingHomePlayers,
-                          remainingAwayPlayers,
-                          "game3",
-                          wonCoinFlip,
-                          teamStats,
-                          allMatches
-                        );
-                        
-                        // Calculate match results
-                        const result = simulateMatchResults(tempSelections, teamStats, allMatches);
-                        if (result.homeTeamWins) {
-                          matchWins++;
-                        }
-                      }
-                      
-                      // Record win probability
-                      playerResults[homePlayer.name] = {
-                        player: homePlayer,
-                        winProb: matchWins / simCount
-                      };
-                    }
-                    
-                    // Find best player
-                    let bestPlayer = null;
-                    let bestWinProb = -1;
-                    
-                    for (const [name, result] of Object.entries(playerResults)) {
-                      if (result.winProb > bestWinProb) {
-                        bestWinProb = result.winProb;
-                        bestPlayer = result.player;
-                      }
-                    }
-                    
-                    if (bestPlayer) {
-                      // Update the selected players with both selections at once
-                      setSelectedPlayers(prev => ({
-                        ...prev,
-                        game3: {
-                          home: bestPlayer,
-                          away: player,
-                        },
-                      }));
-                      
-                      // Remove the home player from available list
-                      setAvailableHomePlayers(prev => prev.filter(p => p.name !== bestPlayer.name));
-                      
-                      // Only AFTER all state updates, move to the next game
-                      setCurrentStep("game-4");
-                    } else {
-                      // Handle error case - no best player found
-                      setIsCalculating(false);
-                      alert("Could not find an optimal player selection. Please try again.");
-                    }
-                  }, 100); // Slightly longer timeout for better UI responsiveness
-                };
-                
-                return (
-                  <div
-                    key={`select-opponent-${player.name}`}
-                    className="p-4 border rounded-lg cursor-pointer hover:bg-blue-100"
-                    onClick={simulateMatchup}
-                  >
-                    <div className="font-medium">{player.displayName}</div>
-                    <div className="text-sm text-gray-600">
-                      HCP: {player.handicap}
-                    </div>
-                    <div className="mt-2">
-                      <div className="text-sm">Record:</div>
-                      <div className="text-sm mt-1">
-                        {player.wins}-{player.losses} ({player.winPercentage}%)
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="flex justify-center">
-            <button
-              className="px-4 py-2 bg-gray-300 text-gray-800 rounded"
-              onClick={handleReset}
-            >
-              Start Over
-            </button>
-          </div>
-        </div>
-      );
-    } else {
-      // We lost the coin flip, so we put up blind for game 3
-      return (
-        <div className="container mx-auto p-4">
-          <FloatingInfoButton onClick={() => setShowInfoPopup(true)} />
-          <InfoPopup isOpen={showInfoPopup} onClose={() => setShowInfoPopup(false)} />
-          <h1 className="text-3xl font-bold mb-6 text-center">
-            Pool Team Stats Analyzer
-          </h1>
-
-          <div className="bg-blue-50 p-6 rounded-lg mb-8">
-            <h2 className="text-xl font-semibold mb-4">Game 3 Selection</h2>
-            <p className="mb-4">
-              You need to put up a player blind for Game 3.
-            </p>
-            
-            {isCalculating ? (
-              <div className="text-center py-4">
-                <p>Calculating optimal strategy...</p>
-                <div className="mt-2 w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-                  <div className="h-full bg-blue-500 animate-pulse"></div>
-                </div>
-              </div>
-            ) : (
-              <>
-                <p className="mb-4">
-                  Recommended player:{" "}
-                  <span className="font-bold">
-                    {optimalPlayer?.displayName || "Calculating..."}
-                  </span>
-                </p>
-                <p className="text-sm mb-6">
-                  This recommendation is based on Monte Carlo simulation of {SIMULATION_COUNT} possible match outcomes.
-                </p>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {availableHomePlayers.map((player) => {
-                    const playerSimResults = simulations[player.name] || {};
-                    const winProb = playerSimResults.matchWins / (playerSimResults.totalSimulations || 1);
-                    
-                    return (
-                      <div
-                        key={`select-player-${player.name}`}
-                        className={`p-4 border rounded-lg cursor-pointer hover:bg-blue-100 ${
-                          player.name === optimalPlayer?.name
-                            ? "bg-green-50 border-green-500"
-                            : ""
-                        }`}
-                        onClick={() => selectPlayerForGame("game3", "home", player)}
-                      >
-                        <div className="font-medium">{player.displayName}</div>
-                        <div className="text-sm text-gray-600">
-                          HCP: {player.handicap}
-                        </div>
-                        <div className="mt-2">
-                          <div className="text-sm">Team win probability:</div>
-                          <div className="flex items-center mt-1">
-                            <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden mr-2">
-                              <div
-                                className="h-full bg-green-500"
-                                style={{ width: `${winProb * 100}%` }}
-                              ></div>
-                            </div>
-                            <span className="font-medium">
-                              {Math.round(winProb * 100)}%
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </>
-            )}
-          </div>
-
-          <div className="flex justify-center">
-            <button
-              className="px-4 py-2 bg-gray-300 text-gray-800 rounded"
-              onClick={handleReset}
-            >
-              Start Over
-            </button>
-          </div>
-        </div>
-      );
-    }
-  }
-
-  // Render Game 4 selection
-  if (currentStep === "game-4") {
-    if (wonCoinFlip) {
-      // We won the coin flip, we put up blind for game 4
-      return (
-        <div className="container mx-auto p-4">
-          <FloatingInfoButton onClick={() => setShowInfoPopup(true)} />
-          <InfoPopup isOpen={showInfoPopup} onClose={() => setShowInfoPopup(false)} />
-          <h1 className="text-3xl font-bold mb-6 text-center">
-            Pool Team Stats Analyzer
-          </h1>
-
-          <div className="bg-blue-50 p-6 rounded-lg mb-8">
-            <h2 className="text-xl font-semibold mb-4">Game 4 Selection</h2>
-            <p className="mb-4">
-              You need to put up a player blind for Game 4.
-            </p>
-            
-            {isCalculating ? (
-              <div className="text-center py-4">
-                <p>Calculating optimal strategy...</p>
-                <div className="mt-2 w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-                  <div className="h-full bg-blue-500 animate-pulse"></div>
-                </div>
-              </div>
-            ) : (
-              <>
-                <p className="mb-4">
-                  Recommended player:{" "}
-                  <span className="font-bold">
-                    {optimalPlayer?.displayName || "Calculating..."}
-                  </span>
-                </p>
-                <p className="text-sm mb-6">
-                  This recommendation is based on Monte Carlo simulation of {SIMULATION_COUNT} possible match outcomes.
-                </p>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {availableHomePlayers.map((player) => {
-                    const playerSimResults = simulations[player.name] || {};
-                    const winProb = playerSimResults.matchWins / (playerSimResults.totalSimulations || 1);
-                    
-                    return (
-                      <div
-                        key={`select-player-${player.name}`}
-                        className={`p-4 border rounded-lg cursor-pointer hover:bg-blue-100 ${
-                          player.name === optimalPlayer?.name
-                            ? "bg-green-50 border-green-500"
-                            : ""
-                        }`}
-                        onClick={() => selectPlayerForGame("game4", "home", player)}
-                      >
-                        <div className="font-medium">{player.displayName}</div>
-                        <div className="text-sm text-gray-600">
-                          HCP: {player.handicap}
-                        </div>
-                        <div className="mt-2">
-                          <div className="text-sm">Team win probability:</div>
-                          <div className="flex items-center mt-1">
-                            <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden mr-2">
-                              <div
-                                className="h-full bg-green-500"
-                                style={{ width: `${winProb * 100}%` }}
-                              ></div>
-                            </div>
-                            <span className="font-medium">
-                              {Math.round(winProb * 100)}%
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </>
-            )}
-          </div>
-
-          <div className="flex justify-center">
-            <button
-              className="px-4 py-2 bg-gray-300 text-gray-800 rounded"
-              onClick={handleReset}
-            >
-              Start Over
-            </button>
-          </div>
-        </div>
-      );
-    }
-  }
-  
-  // Render Game 1, 2, 3, 4 opponent selection
-  if (currentStep === "game-1-opponent" || 
-      currentStep === "game-2-opponent" || 
-      currentStep === "game-3-opponent" || 
-      currentStep === "game-4-opponent") {
-    const gameNumber = parseInt(currentStep.split("-")[1]);
-    return renderOpponentSelectionScreen(gameNumber);
-  }
-  
   // Render summary
   if (currentStep === "summary") {
-    // Calculate overall win probability based on actual selections
-    const calculateFinalProbabilities = () => {
-      // Run 500 simulations of the final matchups
-      let matchWins = 0;
-      let totalGameWins = 0;
-      const simulationCount = 500;
-      
-      for (let i = 0; i < simulationCount; i++) {
-        const result = simulateMatchResults(selectedPlayers, teamStats, allMatches);
-        if (result.homeTeamWins) {
-          matchWins++;
-        }
-        totalGameWins += result.homeGameWins;
-      }
-      
-      return {
-        matchWinProbability: matchWins / simulationCount,
-        expectedGameWins: totalGameWins / simulationCount
-      };
-    };
-    
-    const finalProbabilities = calculateFinalProbabilities();
-    const overallWinPercentage = Math.round(finalProbabilities.matchWinProbability * 100);
+    // Calculate overall win probability based on final matchups
+    const matchupsWithProbability = Object.values(selectedPlayers)
+      .filter((matchup) => matchup.home && matchup.away)
+      .map((matchup) => ({
+        ...matchup,
+        winProbability: calculateWinProbability(
+          matchup.home.name,
+          matchup.away.name,
+          teamStats,
+          allMatches
+        ),
+      }));
+
+    const overallWinPercentage =
+      matchupsWithProbability.length > 0
+        ? Math.round(
+            (matchupsWithProbability.reduce(
+              (sum, m) => sum + m.winProbability,
+              0,
+            ) /
+              matchupsWithProbability.length) *
+              100,
+          )
+        : 0;
 
     return (
       <div className="container mx-auto p-4">
@@ -2046,7 +1736,7 @@ function App() {
         <div className="bg-blue-50 p-6 rounded-lg mb-8">
           <h2 className="text-xl font-semibold mb-4">Final Matchups</h2>
           <p className="mb-6">
-            Here are the final player matchups based on Monte Carlo optimization:
+            Here are the final player matchups based on the Hungarian algorithm optimization:
           </p>
 
           <div className="overflow-x-auto mb-6">
@@ -2107,11 +1797,8 @@ function App() {
             <h3 className="font-medium mb-2">Overall Team Win Probability</h3>
             <div className="text-lg font-bold">{overallWinPercentage}%</div>
             <p className="text-sm mt-2">
-              Expected game wins: {finalProbabilities.expectedGameWins.toFixed(1)} of 12 possible
-            </p>
-            <p className="text-sm mt-2">
               {overallWinPercentage > 50
-                ? "Your team has a favorable advantage based on Monte Carlo simulation!"
+                ? "Your team has a favorable advantage based on Hungarian algorithm optimization!"
                 : "The matchup is challenging, but you still have a chance."}
             </p>
           </div>
@@ -2128,7 +1815,7 @@ function App() {
       </div>
     );
   }
-  
+
   // Default fallback view
   return (
     <div className="text-center p-8">
