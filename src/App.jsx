@@ -997,82 +997,40 @@ function App() {
 
   // Function to choose player for a game
   const selectPlayerForGame = (game, team, player) => {
-    console.log(`Selecting ${team} player for ${game}:`, player.name);
+  console.log(`Selecting ${team} player for ${game}:`, player.name);
 
-    // Update selected players
-    setSelectedPlayers(prev => ({
-      ...prev,
-      [game]: {
-        ...prev[game],
-        [team]: player,
-      },
-    }));
+  // Update selected players
+  setSelectedPlayers(prev => ({
+    ...prev,
+    [game]: {
+      ...prev[game],
+      [team]: player,
+    },
+  }));
 
-    // Remove player from available list
-    if (team === "home") {
-      setAvailableHomePlayers(prev => prev.filter(p => p.name !== player.name));
-      
-      // Special cases for blind selections - redirect to opponent selection screens
-      if ((!wonCoinFlip && (game === "game1" || game === "game3")) || 
-          (wonCoinFlip && (game === "game2" || game === "game4"))) {
-        const gameNumber = parseInt(game.replace("game", ""));
+  // Remove player from available list
+  if (team === "home") {
+    setAvailableHomePlayers(prev => prev.filter(p => p.name !== player.name));
+    
+    // Special cases for blind selections - redirect to opponent selection screens
+    if ((!wonCoinFlip && (game === "game1" || game === "game3")) || 
+        (wonCoinFlip && (game === "game2" || game === "game4"))) {
+      const gameNumber = parseInt(game.replace("game", ""));
+      setTimeout(() => {
         setCurrentStep(`game-${gameNumber}-opponent`);
-        return;
-      }
-    } else {
-      setAvailableAwayPlayers(prev => prev.filter(p => p.name !== player.name));
-    }
-
-    // Move to next step for all other cases
-    const gameNumber = parseInt(game.replace("game", ""));
-    setCurrentStep(gameNumber < 4 ? `game-${gameNumber + 1}` : "summary");
-  };
-
-  // Step 1: Team selection
-  const handleTeamSelection = () => {
-    if (!selectedHomeTeam || !selectedAwayTeam) {
-      alert("Please select both teams first.");
+      }, 100);
       return;
     }
+  } else {
+    setAvailableAwayPlayers(prev => prev.filter(p => p.name !== player.name));
+  }
 
-    // Initialize available players
-    setAvailableHomePlayers([...homeTeamPlayers]);
-    setAvailableAwayPlayers([...awayTeamPlayers]);
-
-    // Move to coin flip step
-    setCurrentStep("coin-flip");
-  };
-
-  // Step 2: Coin flip result
-  const handleCoinFlipResult = (won) => {
-    setWonCoinFlip(won);
-    setCurrentStep("game-1");
-  };
-
-  // NEW: Function to confirm the calculated best player
-  const confirmBestPlayer = (gameNum) => {
-    const game = `game${gameNum}`;
-    
-    // Update selected players with the calculated best player
-    setSelectedPlayers(prev => ({
-      ...prev,
-      [game]: {
-        ...prev[game],
-        home: calculatedBestPlayer,
-      },
-    }));
-    
-    // Remove selected player from available list
-    setAvailableHomePlayers(prev => 
-      prev.filter(p => p.name !== calculatedBestPlayer.name)
-    );
-    
-    // Reset the calculated best player
-    setCalculatedBestPlayer(null);
-    
-    // Navigate to the next game or summary
-    setCurrentStep(gameNum < 4 ? `game-${gameNum + 1}` : "summary");
-  };
+  // Move to next step for all other cases with a small timeout
+  const gameNumber = parseInt(game.replace("game", ""));
+  setTimeout(() => {
+    setCurrentStep(gameNumber < 4 ? `game-${gameNumber + 1}` : "summary");
+  }, 100);
+};
 
   // NEW: Function to choose a different player instead
   const chooseDifferentPlayer = (gameNum) => {
@@ -1084,65 +1042,81 @@ function App() {
 
   // MODIFIED: Handle opponent selection and find best response
   const handleOpponentSelection = (gameNum, player) => {
-    const game = `game${gameNum}`;
-    setIsCalculating(true);
+  const game = `game${gameNum}`;
+  setIsCalculating(true);
+  
+  // Store the opponent player selection
+  const selectedOpponent = player;
+  
+  // Update available opponents list
+  const remainingAwayPlayers = availableAwayPlayers.filter(p => p.name !== selectedOpponent.name);
+  setAvailableAwayPlayers(remainingAwayPlayers);
+  
+  // Update opponent state
+  setSelectedPlayers(prev => ({
+    ...prev,
+    [game]: {
+      ...prev[game],
+      away: selectedOpponent,
+    },
+  }));
+  
+  // Find the best response player
+  setTimeout(() => {
+    console.log(`Finding best player for game ${gameNum} against ${selectedOpponent.name}`);
     
-    // Store the opponent player selection in local variables
-    const selectedOpponent = player;
-    
-    // Create a local copy of remaining available players
-    const remainingAwayPlayers = availableAwayPlayers.filter(p => p.name !== selectedOpponent.name);
-    
-    // Update opponent state but don't navigate yet
-    setSelectedPlayers(prev => ({
-      ...prev,
-      [game]: {
-        ...prev[game],
-        away: selectedOpponent,
-      },
-    }));
-    
-    // Update available opponents list
-    setAvailableAwayPlayers(remainingAwayPlayers);
-    
-    // Give more time for state updates to process
-    setTimeout(() => {
-      console.log(`Finding best player for game ${gameNum} against ${selectedOpponent.name}`);
+    try {
+      const bestPlayer = findBestResponsePlayer(
+        gameNum,
+        selectedOpponent,
+        availableHomePlayers,
+        remainingAwayPlayers,
+        selectedPlayers,
+        teamStats,
+        allMatches
+      );
       
-      // Run in a try/catch to handle any potential errors
-      try {
-        const bestPlayer = findBestResponsePlayer(
-          gameNum,
-          selectedOpponent,
-          availableHomePlayers,
-          remainingAwayPlayers,
-          selectedPlayers,
-          teamStats,
-          allMatches
-        );
+      if (bestPlayer) {
+        console.log(`Found best player: ${bestPlayer.name}`);
         
-        if (bestPlayer) {
-          console.log(`Found best player: ${bestPlayer.name}`);
+        // MODIFIED: Don't always go to confirmation - check the game flow
+        // If we won coin flip and it's game 1/3 OR we lost and it's game 2/4,
+        // we should go directly to the selection without confirmation
+        if ((wonCoinFlip && (gameNum === 1 || gameNum === 3)) || 
+            (!wonCoinFlip && (gameNum === 2 || gameNum === 4))) {
+          // In these cases, automatically select the best player without confirmation
+          setSelectedPlayers(prev => ({
+            ...prev,
+            [game]: {
+              home: bestPlayer,
+              away: selectedOpponent,
+            },
+          }));
           
-          // MODIFIED: Instead of immediately selecting this player, store it for confirmation
+          setAvailableHomePlayers(prev => prev.filter(p => p.name !== bestPlayer.name));
+          
+          setTimeout(() => {
+            setCurrentStep(gameNum < 4 ? `game-${gameNum + 1}` : "summary");
+            setIsCalculating(false);
+          }, 100);
+        } else {
+          // In other cases, we want confirmation
           setCalculatedBestPlayer(bestPlayer);
-          
-          // MODIFIED: Navigate to the confirmation stage
           setCurrentStep(`game-${gameNum}-best-player`);
           setIsCalculating(false);
-        } else {
-          console.error("No best player found");
-          // Handle error case
-          alert("Could not find optimal player. Please try again.");
-          setIsCalculating(false);
         }
-      } catch (error) {
-        console.error("Error in handleOpponentSelection:", error);
-        alert("An error occurred while finding the optimal player.");
+      } else {
+        console.error("No best player found");
+        alert("Could not find optimal player. Please try again.");
         setIsCalculating(false);
       }
-    }, 250); // Longer timeout for Hungarian algorithm
-  };
+    } catch (error) {
+      console.error("Error in handleOpponentSelection:", error);
+      alert("An error occurred while finding the optimal player.");
+      setIsCalculating(false);
+    }
+  }, 250);
+};
 
   // Reset everything and start over
   const handleReset = () => {
