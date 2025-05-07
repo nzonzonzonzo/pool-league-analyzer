@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import "./App.css";
 
 // Name formatting utility - more economical implementation
@@ -1174,6 +1174,13 @@ const handleOpponentSelection = (gameNum, player) => {
     console.error("Invalid player object in handleOpponentSelection");
     return;
   }
+
+    // Add this check to prevent multiple selections
+  const game = `game${gameNum}`;
+  if (selectedPlayers[game]?.home) {
+    console.log(`Already selected a player for game ${gameNum}, skipping`);
+    return;
+  }
   
   console.log(`Handling opponent selection for Game ${gameNum}: ${player.name}`);
   const game = `game${gameNum}`;
@@ -1553,7 +1560,7 @@ const handleOpponentSelection = (gameNum, player) => {
   };
 
   // Render Game 2, 3, 4 selection with similar pattern
-  const renderGameSelection = (gameNum) => {
+  const renderGameSelection = useCallback((gameNum) => {
   console.log(`Rendering Game ${gameNum} selection screen`);
   
   const game = `game${gameNum}`;
@@ -1732,228 +1739,34 @@ const handleOpponentSelection = (gameNum, player) => {
       </div>
     );
   }
-};
+}
+, [wonCoinFlip, lastAutoSelectedPlayer, availableHomePlayers, availableAwayPlayers, 
+    teamStats, allMatches, optimalPlayer, isCalculating, showInfoPopup, handleReset]);
 
-  // Render loading state
-  if (loading) {
-    return <div className="text-center p-8">Loading data...</div>;
-  }
+  const renderContent = useMemo(() => {
+    // Render loading state
+    if (loading) {
+      return <div className="text-center p-8">Loading data...</div>;
+    }
 
-  // Render error state
-  if (error) {
-    return <div className="text-center p-8 text-red-600">{error}</div>;
-  }
+    // Render error state
+    if (error) {
+      return <div className="text-center p-8 text-red-600">{error}</div>;
+    }
 
-  // NEW: Add cases for the new step types in the main render logic
-  if (currentStep.match(/^game-\d-best-player$/)) {
-    const gameNumber = parseInt(currentStep.split('-')[1]);
-    return renderBestPlayerConfirmation(gameNumber);
-  }
-  
-  if (currentStep.match(/^game-\d-manual-selection$/)) {
-    const gameNumber = parseInt(currentStep.split('-')[1]);
-    return renderManualPlayerSelection(gameNumber);
-  }
+    // NEW: Add cases for the new step types in the main render logic
+    if (currentStep.match(/^game-\d-best-player$/)) {
+      const gameNumber = parseInt(currentStep.split('-')[1]);
+      return renderBestPlayerConfirmation(gameNumber);
+    }
+    
+    if (currentStep.match(/^game-\d-manual-selection$/)) {
+      const gameNumber = parseInt(currentStep.split('-')[1]);
+      return renderManualPlayerSelection(gameNumber);
+    }
 
-// Render team selection step
-  if (currentStep === "team-selection") {
-    return (
-      <div className="container mx-auto p-4">
-        <FloatingInfoButton onClick={() => setShowInfoPopup(true)} />
-        <InfoPopup isOpen={showInfoPopup} onClose={() => setShowInfoPopup(false)} />
-        <h1 className="text-3xl font-bold mb-6 text-center">
-          Pool Team Stats Analyzer
-        </h1>
-        <div className="text-xs text-gray-500 mb-4">
-          Found {teams.length} teams and {teamStats.length} players
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <div className="p-4 border rounded-lg">
-            <h2 className="text-xl font-semibold mb-4">Our Team</h2>
-            <div className="mb-4">
-              <label className="block text-neutral-600 mb-1">
-                Select Your Team
-              </label>
-              <SearchableDropdown
-                options={teams}
-                value={selectedHomeTeam}
-                onChange={setSelectedHomeTeam}
-                placeholder="Type to search teams..."
-              />
-            </div>
-
-            {homeTeamPlayers.length > 0 && (
-              <div>
-                <h3 className="font-medium mb-2">
-                  Available Players: {homeTeamPlayers.length}
-                </h3>
-                <div className="border rounded p-2 mb-4 max-h-64 overflow-y-auto">
-                  {homeTeamPlayers.map((player) => (
-                    <div
-                      key={`home-player-${player.name}`}
-                      className="p-3 mb-2 rounded-lg border hover:bg-blue-50 transition-all"
-                    >
-                      <div className="flex justify-between items-center">
-                        <span className="font-medium">{player.displayName}</span>
-                        <span className="text-sm py-1 px-2 pr-3 rounded-full text-primary-dark">
-                          HCP: {player.handicap}
-                        </span>
-                      </div>
-                      <div className="text-sm text-gray-600 mt-1 flex items-center">
-                        <span className="mr-1">Record:</span>
-                        <span className="font-medium">
-                          {player.wins}-{player.losses}
-                        </span>
-                        <span className="mx-1">•</span>
-                        <div className="flex items-center">
-                          <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden mr-1">
-                            <div
-                              className="h-full bg-green-500"
-                              style={{
-                                width: `${parseInt(player.winPercentage)}%`,
-                              }}
-                            ></div>
-                          </div>
-                          <span className="text-xs">
-                            ({player.winPercentage}%)
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="p-4 border rounded-lg">
-            <h2 className="text-xl font-semibold mb-4">Opponent Team</h2>
-            <div className="mb-4">
-              <label className="block text-neutral-600 mb-1">
-                Select Opponent Team
-              </label>
-              <SearchableDropdown
-                options={teams}
-                value={selectedAwayTeam}
-                onChange={setSelectedAwayTeam}
-                placeholder="Type to search opponent teams..."
-              />
-            </div>
-
-            {awayTeamPlayers.length > 0 && (
-              <div>
-                <h3 className="font-medium mb-2">
-                  Available Players: {awayTeamPlayers.length}
-                </h3>
-                <div className="border rounded p-2 mb-4 max-h-64 overflow-y-auto">
-                  {awayTeamPlayers.map((player) => (
-                    <div
-                      key={`away-player-${player.name}`}
-                      className="p-3 mb-2 rounded-lg border hover:bg-blue-50 transition-all"
-                    >
-                      <div className="flex justify-between items-center">
-                        <span className="font-medium">{player.displayName}</span>
-                        <span className="text-sm py-1 px-2 pr-3 rounded-full text-primary-dark">
-                          HCP: {player.handicap}
-                        </span>
-                      </div>
-                      <div className="text-sm text-gray-600 mt-1 flex items-center">
-                        <span className="mr-1">Record:</span>
-                        <span className="font-medium">
-                          {player.wins}-{player.losses}
-                        </span>
-                        <span className="mx-1">•</span>
-                        <div className="flex items-center">
-                          <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden mr-1">
-                            <div
-                              className="h-full bg-green-500"
-                              style={{
-                                width: `${parseInt(player.winPercentage)}%`,
-                              }}
-                            ></div>
-                          </div>
-                          <span className="text-xs">
-                            ({player.winPercentage}%)
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="flex justify-center">
-          <button
-            className="px-4 py-2 bg-blue-600 text-white rounded disabled:bg-gray-400"
-            disabled={!selectedHomeTeam || !selectedAwayTeam}
-            onClick={handleTeamSelection}
-          >
-            Continue to Coin Flip
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // Render coin flip step
-  if (currentStep === "coin-flip") {
-    return (
-      <div className="container mx-auto p-4">
-        <FloatingInfoButton onClick={() => setShowInfoPopup(true)} />
-        <InfoPopup isOpen={showInfoPopup} onClose={() => setShowInfoPopup(false)} />
-        <h1 className="text-3xl font-bold mb-6 text-center">
-          Pool Team Stats Analyzer
-        </h1>
-
-        <div className="bg-blue-50 p-6 rounded-lg mb-8">
-          <h2 className="text-xl font-semibold mb-4">Coin Flip Result</h2>
-          <p className="mb-4">
-            The coin flip determines who selects first and the order of player
-            selection. Who won the coin flip?
-          </p>
-
-          <div className="flex justify-center space-x-4">
-            <button
-              className="px-4 py-2 bg-green-600 text-white rounded"
-              onClick={() => handleCoinFlipResult(true)}
-            >
-              We Won
-            </button>
-            <button
-              className="px-4 py-2 bg-red-600 text-white rounded"
-              onClick={() => handleCoinFlipResult(false)}
-            >
-              Opponent Won
-            </button>
-          </div>
-        </div>
-
-        <div className="flex justify-center">
-          <button
-            className="px-4 py-2 bg-gray-300 text-gray-800 rounded"
-            onClick={handleReset}
-          >
-            Start Over
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (currentStep.match(/^game-\d-opponent$/)) {
-    const gameNumber = parseInt(currentStep.split('-')[1]);
-    return renderOpponentSelectionScreen(gameNumber);
-  }
-
-// Render Game 1 selection
-  if (currentStep === "game-1") {
-    // Loser of coin flip puts up blind for game 1
-    if (wonCoinFlip) {
-      // We won the coin flip, opponent puts up blind for game 1
+  // Render team selection step
+    if (currentStep === "team-selection") {
       return (
         <div className="container mx-auto p-4">
           <FloatingInfoButton onClick={() => setShowInfoPopup(true)} />
@@ -1961,48 +1774,143 @@ const handleOpponentSelection = (gameNum, player) => {
           <h1 className="text-3xl font-bold mb-6 text-center">
             Pool Team Stats Analyzer
           </h1>
+          <div className="text-xs text-gray-500 mb-4">
+            Found {teams.length} teams and {teamStats.length} players
+          </div>
 
-          <div className="bg-blue-50 p-6 rounded-lg mb-8">
-            <h2 className="text-xl font-semibold mb-4">Game 1 Selection</h2>
-            <p className="mb-4">
-              You won the coin flip! The opponent puts up a player blind for
-              Game 1. Which player did they choose?
-            </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div className="p-4 border rounded-lg">
+              <h2 className="text-xl font-semibold mb-4">Our Team</h2>
+              <div className="mb-4">
+                <label className="block text-neutral-600 mb-1">
+                  Select Your Team
+                </label>
+                <SearchableDropdown
+                  options={teams}
+                  value={selectedHomeTeam}
+                  onChange={setSelectedHomeTeam}
+                  placeholder="Type to search teams..."
+                />
+              </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {availableAwayPlayers.map((player) => (
-                <div
-                  key={`select-opponent-${player.name}`}
-                  className="p-4 border rounded-lg cursor-pointer hover:bg-blue-100"
-                  onClick={() => handleOpponentSelection(1, player)}
-                >
-                  <div className="font-medium">{player.displayName}</div>
-                  <div className="text-sm text-gray-600">
-                    HCP: {player.handicap}
-                  </div>
-                  <div className="mt-2">
-                    <div className="text-sm">Record:</div>
-                    <div className="text-sm mt-1">
-                      {player.wins}-{player.losses} ({player.winPercentage}%)
-                    </div>
+              {homeTeamPlayers.length > 0 && (
+                <div>
+                  <h3 className="font-medium mb-2">
+                    Available Players: {homeTeamPlayers.length}
+                  </h3>
+                  <div className="border rounded p-2 mb-4 max-h-64 overflow-y-auto">
+                    {homeTeamPlayers.map((player) => (
+                      <div
+                        key={`home-player-${player.name}`}
+                        className="p-3 mb-2 rounded-lg border hover:bg-blue-50 transition-all"
+                      >
+                        <div className="flex justify-between items-center">
+                          <span className="font-medium">{player.displayName}</span>
+                          <span className="text-sm py-1 px-2 pr-3 rounded-full text-primary-dark">
+                            HCP: {player.handicap}
+                          </span>
+                        </div>
+                        <div className="text-sm text-gray-600 mt-1 flex items-center">
+                          <span className="mr-1">Record:</span>
+                          <span className="font-medium">
+                            {player.wins}-{player.losses}
+                          </span>
+                          <span className="mx-1">•</span>
+                          <div className="flex items-center">
+                            <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden mr-1">
+                              <div
+                                className="h-full bg-green-500"
+                                style={{
+                                  width: `${parseInt(player.winPercentage)}%`,
+                                }}
+                              ></div>
+                            </div>
+                            <span className="text-xs">
+                              ({player.winPercentage}%)
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
-              ))}
+              )}
+            </div>
+
+            <div className="p-4 border rounded-lg">
+              <h2 className="text-xl font-semibold mb-4">Opponent Team</h2>
+              <div className="mb-4">
+                <label className="block text-neutral-600 mb-1">
+                  Select Opponent Team
+                </label>
+                <SearchableDropdown
+                  options={teams}
+                  value={selectedAwayTeam}
+                  onChange={setSelectedAwayTeam}
+                  placeholder="Type to search opponent teams..."
+                />
+              </div>
+
+              {awayTeamPlayers.length > 0 && (
+                <div>
+                  <h3 className="font-medium mb-2">
+                    Available Players: {awayTeamPlayers.length}
+                  </h3>
+                  <div className="border rounded p-2 mb-4 max-h-64 overflow-y-auto">
+                    {awayTeamPlayers.map((player) => (
+                      <div
+                        key={`away-player-${player.name}`}
+                        className="p-3 mb-2 rounded-lg border hover:bg-blue-50 transition-all"
+                      >
+                        <div className="flex justify-between items-center">
+                          <span className="font-medium">{player.displayName}</span>
+                          <span className="text-sm py-1 px-2 pr-3 rounded-full text-primary-dark">
+                            HCP: {player.handicap}
+                          </span>
+                        </div>
+                        <div className="text-sm text-gray-600 mt-1 flex items-center">
+                          <span className="mr-1">Record:</span>
+                          <span className="font-medium">
+                            {player.wins}-{player.losses}
+                          </span>
+                          <span className="mx-1">•</span>
+                          <div className="flex items-center">
+                            <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden mr-1">
+                              <div
+                                className="h-full bg-green-500"
+                                style={{
+                                  width: `${parseInt(player.winPercentage)}%`,
+                                }}
+                              ></div>
+                            </div>
+                            <span className="text-xs">
+                              ({player.winPercentage}%)
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
           <div className="flex justify-center">
             <button
-              className="px-4 py-2 bg-gray-300 text-gray-800 rounded"
-              onClick={handleReset}
+              className="px-4 py-2 bg-blue-600 text-white rounded disabled:bg-gray-400"
+              disabled={!selectedHomeTeam || !selectedAwayTeam}
+              onClick={handleTeamSelection}
             >
-              Start Over
+              Continue to Coin Flip
             </button>
           </div>
         </div>
       );
-    } else {
-      // We lost the coin flip, so we put up blind
+    }
+
+    // Render coin flip step
+    if (currentStep === "coin-flip") {
       return (
         <div className="container mx-auto p-4">
           <FloatingInfoButton onClick={() => setShowInfoPopup(true)} />
@@ -2012,73 +1920,26 @@ const handleOpponentSelection = (gameNum, player) => {
           </h1>
 
           <div className="bg-blue-50 p-6 rounded-lg mb-8">
-            <h2 className="text-xl font-semibold mb-4">Game 1 Selection</h2>
+            <h2 className="text-xl font-semibold mb-4">Coin Flip Result</h2>
             <p className="mb-4">
-              You lost the coin flip! You need to put up a player blind for Game 1.
+              The coin flip determines who selects first and the order of player
+              selection. Who won the coin flip?
             </p>
-            
-            {isCalculating ? (
-              <div className="text-center py-4">
-                <p>Finding optimal player...</p>
-                <div className="mt-2 w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-                  <div className="h-full bg-blue-500 animate-pulse"></div>
-                </div>
-              </div>
-            ) : (
-              <>
-                <p className="mb-4">
-                  Recommended player based on Hungarian algorithm analysis:{" "}
-                  <span className="font-bold">
-                    {optimalPlayer?.displayName || "Calculating..."}
-                  </span>
-                </p>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {availableHomePlayers.map((player) => {
-                    // Calculate average win probability against all opponents
-                    const avgWinProb = availableAwayPlayers.reduce((sum, opponent) => {
-                      return sum + calculateWinProbability(
-                        player.name,
-                        opponent.name,
-                        teamStats,
-                        allMatches
-                      );
-                    }, 0) / Math.max(1, availableAwayPlayers.length);
-                    
-                    return (
-                      <div
-                        key={`select-player-${player.name}`}
-                        className={`p-4 border rounded-lg cursor-pointer hover:bg-blue-100 ${
-                          player.name === optimalPlayer?.name
-                            ? "bg-green-50 border-green-500"
-                            : ""
-                        }`}
-                        onClick={() => selectPlayerForGame("game1", "home", player)}
-                      >
-                        <div className="font-medium">{player.displayName}</div>
-                        <div className="text-sm text-gray-600">
-                          HCP: {player.handicap}
-                        </div>
-                        <div className="mt-2">
-                          <div className="text-sm">Average win probability:</div>
-                          <div className="flex items-center mt-1">
-                            <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden mr-2">
-                              <div
-                                className="h-full bg-green-500"
-                                style={{ width: `${avgWinProb * 100}%` }}
-                              ></div>
-                            </div>
-                            <span className="font-medium">
-                              {Math.round(avgWinProb * 100)}%
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </>
-            )}
+            <div className="flex justify-center space-x-4">
+              <button
+                className="px-4 py-2 bg-green-600 text-white rounded"
+                onClick={() => handleCoinFlipResult(true)}
+              >
+                We Won
+              </button>
+              <button
+                className="px-4 py-2 bg-red-600 text-white rounded"
+                onClick={() => handleCoinFlipResult(false)}
+              >
+                Opponent Won
+              </button>
+            </div>
           </div>
 
           <div className="flex justify-center">
@@ -2092,148 +1953,303 @@ const handleOpponentSelection = (gameNum, player) => {
         </div>
       );
     }
-  }
 
-  // Render summary
-  if (currentStep === "summary") {
-    // Calculate overall win probability
-    const matchupsWithProbability = Object.values(selectedPlayers)
-      .filter((matchup) => matchup.home && matchup.away)
-      .map((matchup) => ({
-        ...matchup,
-        winProbability: calculateWinProbability(
-          matchup.home.name,
-          matchup.away.name,
-          teamStats,  // Add this parameter
-          allMatches  // Add this parameter
-        ),
-      }));
+    if (currentStep.match(/^game-\d-opponent$/)) {
+      const gameNumber = parseInt(currentStep.split('-')[1]);
+      return renderOpponentSelectionScreen(gameNumber);
+    }
 
-    const overallWinPercentage =
-      matchupsWithProbability.length > 0
-        ? Math.round(
-            (matchupsWithProbability.reduce(
-              (sum, m) => sum + m.winProbability,
-              0,
-            ) /
-              matchupsWithProbability.length) *
-              100,
-          )
-        : 0;
+  // Render Game 1 selection
+    if (currentStep === "game-1") {
+      // Loser of coin flip puts up blind for game 1
+      if (wonCoinFlip) {
+        // We won the coin flip, opponent puts up blind for game 1
+        return (
+          <div className="container mx-auto p-4">
+            <FloatingInfoButton onClick={() => setShowInfoPopup(true)} />
+            <InfoPopup isOpen={showInfoPopup} onClose={() => setShowInfoPopup(false)} />
+            <h1 className="text-3xl font-bold mb-6 text-center">
+              Pool Team Stats Analyzer
+            </h1>
 
-    return (
-      <div className="container mx-auto p-4">
-      <FloatingInfoButton onClick={() => setShowInfoPopup(true)} />
-      <InfoPopup isOpen={showInfoPopup} onClose={() => setShowInfoPopup(false)} />
-        <h1 className="text-3xl font-bold mb-6 text-center">
-          Pool Team Stats Analyzer
-        </h1>
+            <div className="bg-blue-50 p-6 rounded-lg mb-8">
+              <h2 className="text-xl font-semibold mb-4">Game 1 Selection</h2>
+              <p className="mb-4">
+                You won the coin flip! The opponent puts up a player blind for
+                Game 1. Which player did they choose?
+              </p>
 
-        <div className="bg-blue-50 p-6 rounded-lg mb-8">
-          <h2 className="text-xl font-semibold mb-4">Final Matchups</h2>
-          <p className="mb-6">
-            Here are the final player matchups based on the coin flip and
-            selection process:
-          </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {availableAwayPlayers.map((player) => (
+                  <div
+                    key={`select-opponent-${player.name}`}
+                    className="p-4 border rounded-lg cursor-pointer hover:bg-blue-100"
+                    onClick={() => handleOpponentSelection(1, player)}
+                  >
+                    <div className="font-medium">{player.displayName}</div>
+                    <div className="text-sm text-gray-600">
+                      HCP: {player.handicap}
+                    </div>
+                    <div className="mt-2">
+                      <div className="text-sm">Record:</div>
+                      <div className="text-sm mt-1">
+                        {player.wins}-{player.losses} ({player.winPercentage}%)
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
 
-          <div className="overflow-x-auto mb-6">
-            <table className="w-full table-auto">
-              <thead>
-                <tr className="bg-gray-100">
-                  <th className="p-2 text-left">Game</th>
-                  <th className="p-2 text-left">Our Player</th>
-                  <th className="p-2 text-left">Opponent</th>
-                  <th className="p-2 text-left">Win Probability</th>
-                  <th className="p-2 text-left">Handicap</th>
-                </tr>
-              </thead>
-              <tbody>
-                {[1, 2, 3, 4].map((gameNum) => {
-                  const game = `game${gameNum}`;
-                  const matchup = selectedPlayers[game];
+            <div className="flex justify-center">
+              <button
+                className="px-4 py-2 bg-gray-300 text-gray-800 rounded"
+                onClick={handleReset}
+              >
+                Start Over
+              </button>
+            </div>
+          </div>
+        );
+      } else {
+        // We lost the coin flip, so we put up blind
+        return (
+          <div className="container mx-auto p-4">
+            <FloatingInfoButton onClick={() => setShowInfoPopup(true)} />
+            <InfoPopup isOpen={showInfoPopup} onClose={() => setShowInfoPopup(false)} />
+            <h1 className="text-3xl font-bold mb-6 text-center">
+              Pool Team Stats Analyzer
+            </h1>
 
-                  // Skip rows where either player is missing
-                  if (!matchup.home || !matchup.away) {
-                    return null;
-                  }
+            <div className="bg-blue-50 p-6 rounded-lg mb-8">
+              <h2 className="text-xl font-semibold mb-4">Game 1 Selection</h2>
+              <p className="mb-4">
+                You lost the coin flip! You need to put up a player blind for Game 1.
+              </p>
+              
+              {isCalculating ? (
+                <div className="text-center py-4">
+                  <p>Finding optimal player...</p>
+                  <div className="mt-2 w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <div className="h-full bg-blue-500 animate-pulse"></div>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <p className="mb-4">
+                    Recommended player based on Hungarian algorithm analysis:{" "}
+                    <span className="font-bold">
+                      {optimalPlayer?.displayName || "Calculating..."}
+                    </span>
+                  </p>
 
-                  const winProb = calculateWinProbability(
-                    matchup.home.name,
-                    matchup.away.name,
-                    teamStats,  // Add this parameter
-                    allMatches  // Add this parameter
-                  );
-
-                  return (
-                    <tr key={`summary-${game}`} className="border-t">
-                      <td className="p-2">Game {gameNum}</td>
-                      <td className="p-2">{matchup.home.displayName}</td>
-                      <td className="p-2">{matchup.away.displayName}</td>
-                      <td className="p-2">
-                        <div className="flex items-center">
-                          <div className="w-24 h-4 bg-gray-200 rounded-full overflow-hidden mr-2">
-                            <div
-                              className="h-full bg-green-500"
-                              style={{ width: `${winProb * 100}%` }}
-                            ></div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {availableHomePlayers.map((player) => {
+                      // Calculate average win probability against all opponents
+                      const avgWinProb = availableAwayPlayers.reduce((sum, opponent) => {
+                        return sum + calculateWinProbability(
+                          player.name,
+                          opponent.name,
+                          teamStats,
+                          allMatches
+                        );
+                      }, 0) / Math.max(1, availableAwayPlayers.length);
+                      
+                      return (
+                        <div
+                          key={`select-player-${player.name}`}
+                          className={`p-4 border rounded-lg cursor-pointer hover:bg-blue-100 ${
+                            player.name === optimalPlayer?.name
+                              ? "bg-green-50 border-green-500"
+                              : ""
+                          }`}
+                          onClick={() => selectPlayerForGame("game1", "home", player)}
+                        >
+                          <div className="font-medium">{player.displayName}</div>
+                          <div className="text-sm text-gray-600">
+                            HCP: {player.handicap}
                           </div>
-                          <span>{Math.round(winProb * 100)}%</span>
+                          <div className="mt-2">
+                            <div className="text-sm">Average win probability:</div>
+                            <div className="flex items-center mt-1">
+                              <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden mr-2">
+                                <div
+                                  className="h-full bg-green-500"
+                                  style={{ width: `${avgWinProb * 100}%` }}
+                                ></div>
+                              </div>
+                              <span className="font-medium">
+                                {Math.round(avgWinProb * 100)}%
+                              </span>
+                            </div>
+                          </div>
                         </div>
-                      </td>
-                      <td className="p-2">
-                        {matchup.home.handicap} vs {matchup.away.handicap}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+            </div>
 
-          <div className="mt-6 p-4 bg-gray-50 rounded">
-            <h3 className="font-medium mb-2">Overall Team Win Probability</h3>
-            <div className="text-lg font-bold">{overallWinPercentage}%</div>
-            <p className="text-sm mt-2">
-              {overallWinPercentage > 50
-                ? "Your team has a favorable advantage!"
-                : "The matchup is challenging, but you still have a chance."}
+            <div className="flex justify-center">
+              <button
+                className="px-4 py-2 bg-gray-300 text-gray-800 rounded"
+                onClick={handleReset}
+              >
+                Start Over
+              </button>
+            </div>
+          </div>
+        );
+      }
+    }
+
+    // Render summary
+    if (currentStep === "summary") {
+      // Calculate overall win probability
+      const matchupsWithProbability = Object.values(selectedPlayers)
+        .filter((matchup) => matchup.home && matchup.away)
+        .map((matchup) => ({
+          ...matchup,
+          winProbability: calculateWinProbability(
+            matchup.home.name,
+            matchup.away.name,
+            teamStats,  // Add this parameter
+            allMatches  // Add this parameter
+          ),
+        }));
+
+      const overallWinPercentage =
+        matchupsWithProbability.length > 0
+          ? Math.round(
+              (matchupsWithProbability.reduce(
+                (sum, m) => sum + m.winProbability,
+                0,
+              ) /
+                matchupsWithProbability.length) *
+                100,
+            )
+          : 0;
+
+      return (
+        <div className="container mx-auto p-4">
+        <FloatingInfoButton onClick={() => setShowInfoPopup(true)} />
+        <InfoPopup isOpen={showInfoPopup} onClose={() => setShowInfoPopup(false)} />
+          <h1 className="text-3xl font-bold mb-6 text-center">
+            Pool Team Stats Analyzer
+          </h1>
+
+          <div className="bg-blue-50 p-6 rounded-lg mb-8">
+            <h2 className="text-xl font-semibold mb-4">Final Matchups</h2>
+            <p className="mb-6">
+              Here are the final player matchups based on the coin flip and
+              selection process:
             </p>
+
+            <div className="overflow-x-auto mb-6">
+              <table className="w-full table-auto">
+                <thead>
+                  <tr className="bg-gray-100">
+                    <th className="p-2 text-left">Game</th>
+                    <th className="p-2 text-left">Our Player</th>
+                    <th className="p-2 text-left">Opponent</th>
+                    <th className="p-2 text-left">Win Probability</th>
+                    <th className="p-2 text-left">Handicap</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[1, 2, 3, 4].map((gameNum) => {
+                    const game = `game${gameNum}`;
+                    const matchup = selectedPlayers[game];
+
+                    // Skip rows where either player is missing
+                    if (!matchup.home || !matchup.away) {
+                      return null;
+                    }
+
+                    const winProb = calculateWinProbability(
+                      matchup.home.name,
+                      matchup.away.name,
+                      teamStats,  // Add this parameter
+                      allMatches  // Add this parameter
+                    );
+
+                    return (
+                      <tr key={`summary-${game}`} className="border-t">
+                        <td className="p-2">Game {gameNum}</td>
+                        <td className="p-2">{matchup.home.displayName}</td>
+                        <td className="p-2">{matchup.away.displayName}</td>
+                        <td className="p-2">
+                          <div className="flex items-center">
+                            <div className="w-24 h-4 bg-gray-200 rounded-full overflow-hidden mr-2">
+                              <div
+                                className="h-full bg-green-500"
+                                style={{ width: `${winProb * 100}%` }}
+                              ></div>
+                            </div>
+                            <span>{Math.round(winProb * 100)}%</span>
+                          </div>
+                        </td>
+                        <td className="p-2">
+                          {matchup.home.handicap} vs {matchup.away.handicap}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="mt-6 p-4 bg-gray-50 rounded">
+              <h3 className="font-medium mb-2">Overall Team Win Probability</h3>
+              <div className="text-lg font-bold">{overallWinPercentage}%</div>
+              <p className="text-sm mt-2">
+                {overallWinPercentage > 50
+                  ? "Your team has a favorable advantage!"
+                  : "The matchup is challenging, but you still have a chance."}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex justify-center">
+            <button
+              className="px-4 py-2 bg-blue-600 text-white rounded"
+              onClick={handleReset}
+            >
+              Start Over
+            </button>
           </div>
         </div>
-
-        <div className="flex justify-center">
-          <button
-            className="px-4 py-2 bg-blue-600 text-white rounded"
-            onClick={handleReset}
-          >
-            Start Over
-          </button>
-        </div>
-      </div>
-    );
+      );
+    }
+    console.log(`Current step: ${currentStep}`);
+  if (currentStep.match(/^game-\d$/)) {
+    const gameNumber = parseInt(currentStep.split('-')[1], 10);
+    if (gameNumber >= 1 && gameNumber <= 4) {
+      console.log(`Rendering game ${gameNumber} via fallback`);
+      return renderGameSelection(gameNumber);
+    }
   }
-  console.log(`Current step: ${currentStep}`);
-if (currentStep.match(/^game-\d$/)) {
-  const gameNumber = parseInt(currentStep.split('-')[1], 10);
-  if (gameNumber >= 1 && gameNumber <= 4) {
-    console.log(`Rendering game ${gameNumber} via fallback`);
-    return renderGameSelection(gameNumber);
-  }
-}
 
-// Final fallback
-return (
-  <div className="container mx-auto p-4 text-center">
-    <h1 className="text-3xl font-bold mb-6">Pool Team Stats Analyzer</h1>
-    <p>Unrecognized state: {currentStep}</p>
-    <button
-      className="px-4 py-2 bg-blue-600 text-white rounded mt-4"
-      onClick={handleReset}
-    >
-      Start Over
-    </button>
-  </div>
-);
+  // Final fallback
+  return (
+    <div className="container mx-auto p-4 text-center">
+      <h1 className="text-3xl font-bold mb-6">Pool Team Stats Analyzer</h1>
+      <p>Unrecognized state: {currentStep}</p>
+      <button
+        className="px-4 py-2 bg-blue-600 text-white rounded mt-4"
+        onClick={handleReset}
+      >
+        Start Over
+      </button>
+    </div>
+  );
+  }, [currentStep, loading, error, selectedPlayers, availableHomePlayers, 
+      availableAwayPlayers, renderGameSelection, renderBestPlayerConfirmation, 
+      renderManualPlayerSelection]);
+
+  return renderContent;
+  
 }
 
 export default App;
