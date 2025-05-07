@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useRef, useReducer } from "react";
 import "./App.css";
 
-// Name formatting utility - more economical implementation
+// Name formatting utility
 const formatName = (fullName) => {
   if (!fullName || typeof fullName !== 'string') return fullName;
   
@@ -57,6 +57,7 @@ const FloatingInfoButton = ({ onClick }) => (
   </button>
 );
 
+// Info Popup Component
 const InfoPopup = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
@@ -131,7 +132,7 @@ function SearchableDropdown({ options, value, onChange, placeholder, minChars = 
   const dropdownRef = useRef(null);
   const optionsRef = useRef([]);
 
-// Filter options based on search term
+  // Filter options based on search term
   const filteredOptions = options.filter(option => 
     option.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -249,9 +250,6 @@ function SearchableDropdown({ options, value, onChange, placeholder, minChars = 
                 }
                 onClick={() => handleSelect(option)}
                 onMouseEnter={() => setFocusedIndex(index)}
-                style={{
-                  transition: "all 0.2s ease"
-                }}
               >
                 {option}
               </div>
@@ -302,7 +300,7 @@ function hungarianOptimalAssignment(matrix) {
       }
     }
 
-// Step 2: Subtract column minima
+    // Step 2: Subtract column minima
     for (let j = 0; j < n; j++) {
       // Find minimum value in column
       let minVal = Infinity;
@@ -511,13 +509,13 @@ function hungarianOptimalAssignment(matrix) {
   }
 }
 
-// Efficient function to create a shallow copy of an object
+// Create a copy of selections object
 function cloneSelections(selections) {
   const clone = {};
   for (const gameKey in selections) {
     clone[gameKey] = { 
-      home: selections[gameKey].home, 
-      away: selections[gameKey].away 
+      home: selections[gameKey].home ? {...selections[gameKey].home} : null, 
+      away: selections[gameKey].away ? {...selections[gameKey].away} : null 
     };
   }
   return clone;
@@ -860,78 +858,189 @@ function findOptimalBlindPlayer(availableHomePlayers, availableAwayPlayers, team
   return bestPlayer;
 }
 
-function App() {
+// Define action types for our reducer
+const ACTION_TYPES = {
+  SET_LOADING: 'SET_LOADING',
+  SET_ERROR: 'SET_ERROR',
+  SET_DATA: 'SET_DATA',
+  SET_INFO_POPUP: 'SET_INFO_POPUP',
+  SET_CALCULATING: 'SET_CALCULATING',
+  SET_CURRENT_STEP: 'SET_CURRENT_STEP',
+  SET_COIN_FLIP: 'SET_COIN_FLIP',
+  SET_SELECTED_TEAMS: 'SET_SELECTED_TEAMS',
+  SET_AVAILABLE_PLAYERS: 'SET_AVAILABLE_PLAYERS',
+  SELECT_PLAYER: 'SELECT_PLAYER',
+  SET_BEST_PLAYER: 'SET_BEST_PLAYER',
+  SET_OPTIMAL_PLAYER: 'SET_OPTIMAL_PLAYER',
+  RESET_APP: 'RESET_APP'
+};
+
+// Initial state for our reducer
+const initialState = {
   // UI state
-  const [showInfoPopup, setShowInfoPopup] = useState(false);
-  const [isCalculating, setIsCalculating] = useState(false);
-  const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  // Add this with your other state declarations
-  const processingSelectionRef = useRef(null);
+  loading: true,
+  error: null,
+  isCalculating: false,
+  showInfoPopup: false,
   
-  // Data states
-  const [allMatches, setAllMatches] = useState([]);
-  const [teamStats, setTeamStats] = useState([]);
-  const [teams, setTeams] = useState([]);
-  const [optimalPlayer, setOptimalPlayer] = useState(null);
+  // Game state
+  currentStep: "team-selection",
+  wonCoinFlip: null,
   
-  // NEW STATE: To track calculated best player for confirmation stage
-  const [calculatedBestPlayer, setCalculatedBestPlayer] = useState(null);
+  // Data state
+  allMatches: [],
+  teamStats: [],
+  teams: [],
   
-  // Team selection states
-  const [selectedHomeTeam, setSelectedHomeTeam] = useState("");
-  const [selectedAwayTeam, setSelectedAwayTeam] = useState("");
-  const [homeTeamPlayers, setHomeTeamPlayers] = useState([]);
-  const [awayTeamPlayers, setAwayTeamPlayers] = useState([]);
-
-  // Game selection process states
-  const [currentStep, setCurrentStep] = useState("team-selection");
-  const [wonCoinFlip, setWonCoinFlip] = useState(null);
-  const [availableHomePlayers, setAvailableHomePlayers] = useState([]);
-  const [availableAwayPlayers, setAvailableAwayPlayers] = useState([]);
-  const [selectedPlayers, setSelectedPlayers] = useState({
+  // Selection state
+  selectedHomeTeam: "",
+  selectedAwayTeam: "",
+  homeTeamPlayers: [],
+  awayTeamPlayers: [],
+  availableHomePlayers: [],
+  availableAwayPlayers: [],
+  
+  // Algorithm results
+  optimalPlayer: null,
+  calculatedBestPlayer: null,
+  lastAutoSelectedPlayer: null,
+  
+  // Game selections
+  selectedPlayers: {
     game1: { home: null, away: null },
     game2: { home: null, away: null },
     game3: { home: null, away: null },
     game4: { home: null, away: null },
-  });
+  },
+  
+  // Process tracking
+  isProcessingSelection: false,
+  processingGame: null
+};
 
-  // Add this with your other state declarations
-const [lastAutoSelectedPlayer, setLastAutoSelectedPlayer] = useState(null);
-
- // Custom hook to perform multiple state updates before navigation
-  const useMultiStateUpdate = () => {
-    const [pendingUpdates, setPendingUpdates] = useState([]);
-    const [isUpdating, setIsUpdating] = useState(false);
-    
-    // Function to apply all pending updates
-    useEffect(() => {
-      if (pendingUpdates.length > 0 && !isUpdating) {
-        setIsUpdating(true);
+// Reducer function to handle all state updates
+function appReducer(state, action) {
+  switch (action.type) {
+    case ACTION_TYPES.SET_LOADING:
+      return { ...state, loading: action.payload };
+      
+    case ACTION_TYPES.SET_ERROR:
+      return { ...state, error: action.payload, loading: false };
+      
+    case ACTION_TYPES.SET_DATA:
+      return { 
+        ...state, 
+        ...action.payload,
+        loading: false 
+      };
+      
+    case ACTION_TYPES.SET_INFO_POPUP:
+      return { ...state, showInfoPopup: action.payload };
+      
+    case ACTION_TYPES.SET_CALCULATING:
+      return { ...state, isCalculating: action.payload };
+      
+    case ACTION_TYPES.SET_CURRENT_STEP:
+      return { ...state, currentStep: action.payload };
+      
+    case ACTION_TYPES.SET_COIN_FLIP:
+      return { ...state, wonCoinFlip: action.payload };
+      
+    case ACTION_TYPES.SET_SELECTED_TEAMS:
+      const { homeTeam, awayTeam } = action.payload;
+      const homeTeamPlayers = homeTeam ? 
+        state.teamStats.filter(player => player.team === homeTeam) : [];
+      const awayTeamPlayers = awayTeam ? 
+        state.teamStats.filter(player => player.team === awayTeam) : [];
         
-        // Apply all updates in sequence
-        const applyUpdates = async () => {
-          for (const update of pendingUpdates) {
-            await update();
-          }
-          
-          // Clear updates and reset flag
-          setPendingUpdates([]);
-          setIsUpdating(false);
-        };
-        
-        applyUpdates();
+      return { 
+        ...state, 
+        selectedHomeTeam: homeTeam,
+        selectedAwayTeam: awayTeam,
+        homeTeamPlayers,
+        awayTeamPlayers
+      };
+      
+    case ACTION_TYPES.SET_AVAILABLE_PLAYERS:
+      return { 
+        ...state, 
+        availableHomePlayers: action.payload.home || state.availableHomePlayers,
+        availableAwayPlayers: action.payload.away || state.availableAwayPlayers
+      };
+      
+    case ACTION_TYPES.SELECT_PLAYER:
+      const { game, team, player } = action.payload;
+      // Create a deep copy of the selectedPlayers object
+      const updatedSelectedPlayers = cloneSelections(state.selectedPlayers);
+      updatedSelectedPlayers[game][team] = player;
+      
+      // Create updated available players lists
+      let updatedAvailableHomePlayers = [...state.availableHomePlayers];
+      let updatedAvailableAwayPlayers = [...state.availableAwayPlayers];
+      
+      if (team === 'home') {
+        updatedAvailableHomePlayers = updatedAvailableHomePlayers.filter(p => p.name !== player.name);
+      } else {
+        updatedAvailableAwayPlayers = updatedAvailableAwayPlayers.filter(p => p.name !== player.name);
       }
-    }, [pendingUpdates, isUpdating]);
-    
-    // Add an update to the queue
-    const addUpdate = (updateFn) => {
-      setPendingUpdates(prev => [...prev, updateFn]);
-    };
-    
-    return { addUpdate, isUpdating };
-  };
+      
+      return {
+        ...state,
+        selectedPlayers: updatedSelectedPlayers,
+        availableHomePlayers: updatedAvailableHomePlayers,
+        availableAwayPlayers: updatedAvailableAwayPlayers,
+        isProcessingSelection: true,
+        processingGame: game
+      };
+      
+    case ACTION_TYPES.SET_BEST_PLAYER:
+      return {
+        ...state,
+        calculatedBestPlayer: action.payload,
+        isCalculating: false
+      };
+      
+    case ACTION_TYPES.SET_OPTIMAL_PLAYER:
+      return {
+        ...state,
+        optimalPlayer: action.payload,
+        isCalculating: false
+      };
+
+    case ACTION_TYPES.RESET_APP:
+      return {
+        ...initialState,
+        // Keep the loaded data
+        allMatches: state.allMatches,
+        teamStats: state.teamStats,
+        teams: state.teams,
+        loading: false
+      };
+      
+    default:
+      return state;
+  }
+}
+
+// Main App component
+function App() {
+  // State management with useReducer
+  const [state, dispatch] = useReducer(appReducer, initialState);
+  
+  // Extract commonly used state values for convenience
+  const {
+    loading, error, showInfoPopup, isCalculating,
+    currentStep, wonCoinFlip,
+    allMatches, teamStats, teams,
+    selectedHomeTeam, selectedAwayTeam, 
+    homeTeamPlayers, awayTeamPlayers,
+    availableHomePlayers, availableAwayPlayers,
+    optimalPlayer, calculatedBestPlayer, lastAutoSelectedPlayer,
+    selectedPlayers, isProcessingSelection, processingGame
+  } = state;
+  
+  // Flag to prevent multiple operations on the same game
+  const processingRef = useRef(null);
 
   // Load data on component mount
   useEffect(() => {
@@ -943,7 +1052,11 @@ const [lastAutoSelectedPlayer, setLastAutoSelectedPlayer] = useState(null);
         const statsResponse = await fetch(`${basePath}data/team_stats.json`);
 
         if (!matchesResponse.ok || !statsResponse.ok) {
-          throw new Error("Failed to fetch data files");
+          dispatch({
+            type: ACTION_TYPES.SET_ERROR,
+            payload: "Failed to fetch data files"
+          });
+          return;
         }
 
         const matchesData = await matchesResponse.json();
@@ -951,55 +1064,44 @@ const [lastAutoSelectedPlayer, setLastAutoSelectedPlayer] = useState(null);
 
         // Filter out forfeit matches
         const validMatches = matchesData.filter(match => !match.forfeit);
-        setAllMatches(validMatches);
         
         // Transform stats to add displayName
         const transformedStats = statsData.map(player => ({
           ...player,
           displayName: formatName(player.name)
         }));
-        setTeamStats(transformedStats);
 
         // Extract unique team names
         const uniqueTeams = [...new Set(statsData.map(player => player.team))].sort();
-        setTeams(uniqueTeams);
         
-        setLoading(false);
+        // Update all data at once
+        dispatch({
+          type: ACTION_TYPES.SET_DATA,
+          payload: {
+            allMatches: validMatches,
+            teamStats: transformedStats,
+            teams: uniqueTeams
+          }
+        });
       } catch (err) {
         console.error("Error loading data:", err);
-        setError("Failed to load data: " + err.message);
-        setLoading(false);
+        dispatch({
+          type: ACTION_TYPES.SET_ERROR,
+          payload: "Failed to load data: " + err.message
+        });
       }
     };
 
     loadData();
   }, []);
-
-  // Update team players when selection changes
-  useEffect(() => {
-    if (selectedHomeTeam) {
-      const players = teamStats.filter(player => player.team === selectedHomeTeam);
-      setHomeTeamPlayers(players);
-    } else {
-      setHomeTeamPlayers([]);
-    }
-  }, [selectedHomeTeam, teamStats]);
-
-  useEffect(() => {
-    if (selectedAwayTeam) {
-      const players = teamStats.filter(player => player.team === selectedAwayTeam);
-      setAwayTeamPlayers(players);
-    } else {
-      setAwayTeamPlayers([]);
-    }
-  }, [selectedAwayTeam, teamStats]);
-
+  
   // Calculate optimal player for blind selection
   useEffect(() => {
     if (
       currentStep.startsWith("game-") && 
       !currentStep.includes("opponent") && 
-      !currentStep.includes("best-player") && // NEW: Skip this calculation for best-player screen
+      !currentStep.includes("best-player") && 
+      !currentStep.includes("manual-selection") &&
       !isCalculating && 
       availableHomePlayers.length > 0 && 
       availableAwayPlayers.length > 0
@@ -1010,234 +1112,138 @@ const [lastAutoSelectedPlayer, setLastAutoSelectedPlayer] = useState(null);
 
   // Calculate the optimal player for blind selection
   const calculateOptimalPlayer = () => {
-    setIsCalculating(true);
+    dispatch({ type: ACTION_TYPES.SET_CALCULATING, payload: true });
+    
+    // Use setTimeout to prevent UI freezing during calculation
     setTimeout(() => {
-      const optimalPlayer = findOptimalBlindPlayer(
-        availableHomePlayers,
-        availableAwayPlayers,
-        teamStats,
-        allMatches
-      );
-      setOptimalPlayer(optimalPlayer);
-      setIsCalculating(false);
+      try {
+        const optimalPlayer = findOptimalBlindPlayer(
+          availableHomePlayers,
+          availableAwayPlayers,
+          teamStats,
+          allMatches
+        );
+        
+        dispatch({ 
+          type: ACTION_TYPES.SET_OPTIMAL_PLAYER, 
+          payload: optimalPlayer 
+        });
+      } catch (error) {
+        console.error("Error calculating optimal player:", error);
+        dispatch({ type: ACTION_TYPES.SET_CALCULATING, payload: false });
+      }
     }, 0);
   };
 
-  // Helper to get current game number from step
-  const getCurrentGameNumber = () => {
-    if (currentStep.startsWith("game-")) {
-      const parts = currentStep.split("-");
-      if (parts.length >= 2 && !isNaN(parseInt(parts[1]))) {
-        return parseInt(parts[1]);
-      }
-    }
-    return 1; // Default
-  };
-
-  // Function to choose player for a game
-const selectPlayerForGame = (game, team, player) => {
-  // Validate inputs
-  if (!player || !player.name || !game || !team) {
-    console.error("Invalid parameters in selectPlayerForGame");
-    return;
-  }
-  
-  // Check if we're already processing a selection for this game
-  if (processingSelectionRef.current === game) {
-    console.log(`Already processing a selection for ${game}, skipping`);
-    return;
-  }
-  
-  // Set the processing flag
-  processingSelectionRef.current = game;
-  
-  console.log(`Selecting ${team} player for ${game}:`, player.name);
-  
-  // Store local copies
-  const selectedPlayer = JSON.parse(JSON.stringify(player));
-  const gameStr = String(game);
-  const teamStr = String(team);
-  
-  // Update player lists based on team
-  if (teamStr === "home") {
-    setAvailableHomePlayers(prev => 
-      prev.filter(p => p.name !== selectedPlayer.name)
-    );
-  } else {
-    setAvailableAwayPlayers(prev => 
-      prev.filter(p => p.name !== selectedPlayer.name)
-    );
-  }
-  
-  // Update selected players state
-  setSelectedPlayers(prev => {
-    const updated = {...prev};
-    if (!updated[gameStr]) {
-      updated[gameStr] = {};
-    }
-    updated[gameStr] = {
-      ...updated[gameStr],
-      [teamStr]: selectedPlayer
-    };
-    return updated;
-  });
-  
-  // Determine next screen
-  const gameNumber = parseInt(gameStr.replace("game", ""), 10);
-  
-  // Navigate after state updates
-  setTimeout(() => {
-    // Choose next screen based on context
-    let nextStep;
-    
-    if (teamStr === "home" && 
-        ((!wonCoinFlip && (gameStr === "game1" || gameStr === "game3")) || 
-         (wonCoinFlip && (gameStr === "game2" || gameStr === "game4")))) {
-      nextStep = `game-${gameNumber}-opponent`;
-    } else {
-      nextStep = gameNumber < 4 ? `game-${gameNumber + 1}` : "summary";
-    }
-    
-    console.log(`Navigating to: ${nextStep}`);
-    setCurrentStep(nextStep);
-    
-    // Clear the processing flag
-    setTimeout(() => {
-      if (processingSelectionRef.current === gameStr) {
-        processingSelectionRef.current = null;
-      }
-    }, 500);
-  }, 300);
-};
-
-// Step 1: Team selection
+  // Function to handle team selection
   const handleTeamSelection = () => {
     if (!selectedHomeTeam || !selectedAwayTeam) {
       alert("Please select both teams first.");
       return;
     }
 
-    // Initialize available players
-    setAvailableHomePlayers([...homeTeamPlayers]);
-    setAvailableAwayPlayers([...awayTeamPlayers]);
+    // Initialize available players from selected teams
+    dispatch({
+      type: ACTION_TYPES.SET_AVAILABLE_PLAYERS,
+      payload: {
+        home: [...homeTeamPlayers],
+        away: [...awayTeamPlayers]
+      }
+    });
 
-    // Move to coin flip step
-    setCurrentStep("coin-flip");
+    // Navigate to coin flip step
+    dispatch({ type: ACTION_TYPES.SET_CURRENT_STEP, payload: "coin-flip" });
   };
 
-  // Step 2: Coin flip result
+  // Function to handle coin flip result
   const handleCoinFlipResult = (won) => {
-    setWonCoinFlip(won);
-    setCurrentStep("game-1");
+    dispatch({ type: ACTION_TYPES.SET_COIN_FLIP, payload: won });
+    dispatch({ type: ACTION_TYPES.SET_CURRENT_STEP, payload: "game-1" });
   };
 
-  // NEW: Function to confirm the calculated best player
-const confirmBestPlayer = (gameNum) => {
-  const game = `game${gameNum}`;
-  
-  console.log(`Confirming best player for game ${gameNum}:`, calculatedBestPlayer?.name);
-  
-  // Check if calculatedBestPlayer exists before using it
-  if (!calculatedBestPlayer) {
-    console.error("Cannot confirm player: calculatedBestPlayer is null");
-    alert("Error confirming player. Please try again.");
-    return; // Exit if no player is selected
-  }
-  
-  // Create a local copy to work with
-  const playerToConfirm = JSON.parse(JSON.stringify(calculatedBestPlayer));
-  
-  // First update available players list
-  setAvailableHomePlayers(prevPlayers => 
-    prevPlayers.filter(p => p.name !== playerToConfirm.name)
-  );
-  
-  // Then update selected players state with the confirmed player
-  setSelectedPlayers(prevState => {
-    const newState = JSON.parse(JSON.stringify(prevState));
-    if (!newState[game]) newState[game] = {};
-    newState[game].home = playerToConfirm;
-    return newState;
-  });
-  
-  // First navigate to next screen
-  const nextStep = gameNum < 4 ? `game-${gameNum + 1}` : "summary";
-  console.log(`Navigating to: ${nextStep}`);
-  setCurrentStep(nextStep);
-  
-  // THEN reset the calculated best player after a short delay
-  setTimeout(() => {
-    setCalculatedBestPlayer(null);
-  }, 100);
-};
-
-  // NEW: Function to choose a different player instead
-const chooseDifferentPlayer = (gameNum) => {
-  console.log(`Choosing different player for game ${gameNum}`);
-  
-  // Reset calculated best player first
-  setCalculatedBestPlayer(null);
-  
-  // Then navigate to manual selection with delay
-  setTimeout(() => {
-    const nextStep = `game-${gameNum}-manual-selection`;
-    console.log(`Navigating to manual selection: ${nextStep}`);
-    setCurrentStep(nextStep);
-  }, 300);
-};
-
-
-  // CORRECTED: Handle opponent selection and find best response
-const handleOpponentSelection = (gameNum, player) => {
-  if (!player || !player.name) {
-    console.error("Invalid player object in handleOpponentSelection");
-    return;
-  }
-  
-  const game = `game${gameNum}`;
-  
-  // Check if we're already processing a selection for this game
-  if (processingSelectionRef.current === game) {
-    console.log(`Already processing a selection for game ${gameNum}, skipping`);
-    return;
-  }
-  
-  // Set the processing flag
-  processingSelectionRef.current = game;
-  
-  console.log(`Handling opponent selection for Game ${gameNum}: ${player.name}`);
-  setIsCalculating(true);
-  
-  // Make a deep copy of the opponent
-  const opponentCopy = JSON.parse(JSON.stringify(player));
-  
-  // Update opponent in state and remove from available players
-  setSelectedPlayers(prev => {
-    const result = {...prev};
-    if (!result[game]) result[game] = {};
-    result[game].away = opponentCopy;
-    return result;
-  });
-  
-  setAvailableAwayPlayers(prev => 
-    prev.filter(p => p.name !== opponentCopy.name)
-  );
-  
-  // Use a longer timeout to ensure state updates complete
-  setTimeout(() => {
-    try {
-      // Use fresh state
-      const currentHomePlayers = [...availableHomePlayers];
-      const remainingAwayPlayers = [...availableAwayPlayers];
-      const currentPlayerSelections = {...selectedPlayers};
+  // Function to select player for a game
+  const selectPlayerForGame = (game, team, player) => {
+    // Check if we're already processing a selection for this game
+    if (processingRef.current === game) {
+      console.log(`Already processing a selection for ${game}, skipping`);
+      return;
+    }
+    
+    // Set processing flag
+    processingRef.current = game;
+    console.log(`Selecting ${team} player for ${game}:`, player.name);
+    
+    // Dispatch the player selection action
+    dispatch({ 
+      type: ACTION_TYPES.SELECT_PLAYER, 
+      payload: { game, team, player } 
+    });
+    
+    // Determine next step based on game flow
+    const gameNumber = parseInt(game.replace("game", ""));
+    const shouldGoToOpponentSelection = 
+      (team === "home") && 
+      ((!wonCoinFlip && (gameNumber === 1 || gameNumber === 3)) || 
+       (wonCoinFlip && (gameNumber === 2 || gameNumber === 4)));
+    
+    // Allow UI to update before navigation
+    setTimeout(() => {
+      if (shouldGoToOpponentSelection) {
+        dispatch({ 
+          type: ACTION_TYPES.SET_CURRENT_STEP, 
+          payload: `game-${gameNumber}-opponent` 
+        });
+      } else {
+        dispatch({ 
+          type: ACTION_TYPES.SET_CURRENT_STEP, 
+          payload: gameNumber < 4 ? `game-${gameNumber + 1}` : "summary" 
+        });
+      }
       
+      // Clear processing flag
+      processingRef.current = null;
+    }, 100);
+  };
+  
+  // Function to handle opponent selection and find best response
+  const handleOpponentSelection = async (gameNum, player) => {
+    // Validate inputs
+    if (!player || !player.name) {
+      console.error("Invalid player in handleOpponentSelection");
+      return;
+    }
+    
+    const game = `game${gameNum}`;
+    
+    // Check if already processing
+    if (processingRef.current === game) {
+      console.log(`Already processing selection for ${game}`);
+      return;
+    }
+    
+    // Set processing flag and start calculating
+    processingRef.current = game;
+    console.log(`Handling opponent selection for Game ${gameNum}: ${player.name}`);
+    dispatch({ type: ACTION_TYPES.SET_CALCULATING, payload: true });
+    
+    // Select opponent player
+    dispatch({ 
+      type: ACTION_TYPES.SELECT_PLAYER, 
+      payload: { game, team: "away", player } 
+    });
+    
+    // Use Promise to wait for state updates
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    // Find best response player
+    try {
       console.log("Finding best response player");
       const bestPlayer = findBestResponsePlayer(
         gameNum,
-        opponentCopy,
-        currentHomePlayers,
-        remainingAwayPlayers,
-        currentPlayerSelections,
+        player,
+        availableHomePlayers,
+        availableAwayPlayers,
+        selectedPlayers,
         teamStats,
         allMatches
       );
@@ -1245,118 +1251,184 @@ const handleOpponentSelection = (gameNum, player) => {
       if (!bestPlayer) {
         console.error("No best player found");
         alert("Could not find optimal player. Please try again.");
-        setIsCalculating(false);
+        dispatch({ type: ACTION_TYPES.SET_CALCULATING, payload: false });
+        processingRef.current = null;
         return;
       }
       
       console.log(`Found best player: ${bestPlayer.name}`);
-      const bestPlayerCopy = JSON.parse(JSON.stringify(bestPlayer));
       
-      // STORE THE AUTO-SELECTED PLAYER
-      setLastAutoSelectedPlayer({
-        player: bestPlayerCopy,
-        opponent: opponentCopy,
-        gameNumber: gameNum,
-        winProbability: calculateWinProbability(
-          bestPlayerCopy.name,
-          opponentCopy.name,
-          teamStats,
-          allMatches
-        )
+      // Select best player
+      dispatch({ 
+        type: ACTION_TYPES.SELECT_PLAYER, 
+        payload: { game, team: "home", player: bestPlayer } 
       });
       
-      // TEMPORARY SOLUTION: Skip confirmation for all cases
-      // Update player selection directly
-      setAvailableHomePlayers(prev => 
-        prev.filter(p => p.name !== bestPlayerCopy.name)
+      // Store auto-selected player for reference
+      const winProbability = calculateWinProbability(
+        bestPlayer.name,
+        player.name,
+        teamStats,
+        allMatches
       );
       
-      setSelectedPlayers(prev => {
-        const result = {...prev};
-        if (!result[game]) result[game] = { away: opponentCopy };
-        result[game].home = bestPlayerCopy;
-        return result;
+      // Wait for state to update
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Navigate to next step
+      dispatch({ 
+        type: ACTION_TYPES.SET_CURRENT_STEP, 
+        payload: gameNum < 4 ? `game-${gameNum + 1}` : "summary" 
       });
       
-      // Wait to ensure state updates complete
-      setTimeout(() => {
-        // Navigate to next game
-        if (gameNum < 4) {
-          console.log(`Navigating to game-${gameNum + 1}`);
-          setCurrentStep(`game-${gameNum + 1}`);
-        } else {
-          console.log("Navigating to summary");
-          setCurrentStep("summary");
-        }
-        setIsCalculating(false);
-      }, 500);
+      dispatch({ type: ACTION_TYPES.SET_CALCULATING, payload: false });
     } catch (error) {
       console.error("Error in handleOpponentSelection:", error);
       alert("An error occurred while finding the optimal player.");
-      setIsCalculating(false);
+      dispatch({ type: ACTION_TYPES.SET_CALCULATING, payload: false });
     }
-  setTimeout(() => {
-    if (processingSelectionRef.current === game) {
-      processingSelectionRef.current = null;
-    }
-  }, 1000); // Clear after 1 second to ensure processing is complete
-  }, 500);
-};
-
-  // Reset everything and start over
+    
+    // Clear processing flag
+    processingRef.current = null;
+  };
+  
+  // Function to reset everything and start over
   const handleReset = () => {
-    setSelectedHomeTeam("");
-    setSelectedAwayTeam("");
-    setHomeTeamPlayers([]);
-    setAwayTeamPlayers([]);
-    setCurrentStep("team-selection");
-    setWonCoinFlip(null);
-    setAvailableHomePlayers([]);
-    setAvailableAwayPlayers([]);
-    setSelectedPlayers({
-      game1: { home: null, away: null },
-      game2: { home: null, away: null },
-      game3: { home: null, away: null },
-      game4: { home: null, away: null },
-    });
-    setOptimalPlayer(null);
-    setCalculatedBestPlayer(null); // NEW: Reset calculated best player
-    setIsCalculating(false);
+    dispatch({ type: ACTION_TYPES.RESET_APP });
   };
 
-  // NEW: Render function for best player confirmation stage
+  // Render function for best player confirmation stage
   const renderBestPlayerConfirmation = (gameNum) => {
-  const game = `game${gameNum}`;
-  const opponent = selectedPlayers[game]?.away;
-  
-  console.log(`Rendering confirmation screen for game ${gameNum}`);
-  console.log(`calculatedBestPlayer:`, calculatedBestPlayer);
-  console.log(`opponent:`, opponent);
-  
-  // Add defensive checks to prevent null reference errors
-  if (!calculatedBestPlayer || !opponent) {
-    console.error("Missing data for confirmation screen");
+    const game = `game${gameNum}`;
+    const opponent = selectedPlayers[game]?.away;
+    
+    if (!calculatedBestPlayer || !opponent) {
+      return (
+        <div className="container mx-auto p-4 text-center">
+          <h1 className="text-3xl font-bold mb-6 text-center">
+            Pool Team Stats Analyzer
+          </h1>
+          <div className="bg-yellow-50 p-6 rounded-lg mb-8 border border-yellow-300">
+            <h2 className="text-xl font-semibold mb-4">Data Loading Error</h2>
+            <p className="mb-4">
+              There was a problem loading the player data for confirmation.
+            </p>
+            <div className="mt-4">
+              <button
+                className="px-4 py-2 bg-blue-600 text-white rounded mr-4"
+                onClick={() => dispatch({ 
+                  type: ACTION_TYPES.SET_CURRENT_STEP,
+                  payload: `game-${gameNum}`
+                })}
+              >
+                Go Back
+              </button>
+              <button
+                className="px-4 py-2 bg-gray-300 text-gray-800 rounded"
+                onClick={handleReset}
+              >
+                Start Over
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    
+    // Calculate win probability
+    const winProb = calculateWinProbability(
+      calculatedBestPlayer.name,
+      opponent.name,
+      teamStats,
+      allMatches
+    );
     
     return (
-      <div className="container mx-auto p-4 text-center">
+      <div className="container mx-auto p-4">
+        <FloatingInfoButton onClick={() => dispatch({ 
+          type: ACTION_TYPES.SET_INFO_POPUP, 
+          payload: true 
+        })} />
+        <InfoPopup isOpen={showInfoPopup} onClose={() => dispatch({ 
+          type: ACTION_TYPES.SET_INFO_POPUP, 
+          payload: false 
+        })} />
+        
         <h1 className="text-3xl font-bold mb-6 text-center">
           Pool Team Stats Analyzer
         </h1>
-        <div className="bg-yellow-50 p-6 rounded-lg mb-8 border border-yellow-300">
-          <h2 className="text-xl font-semibold mb-4">Data Loading Error</h2>
+        
+        <div className="bg-blue-50 p-6 rounded-lg mb-8">
+          <h2 className="text-xl font-semibold mb-4">Optimal Player for Game {gameNum}</h2>
           <p className="mb-4">
-            There was a problem loading the player data for confirmation.
+            Based on the Hungarian algorithm, your optimal player to match against {opponent.displayName} is:
           </p>
-          <div className="mt-4">
+          
+          <div className="p-4 border rounded-lg bg-green-50 border-green-500 mb-6">
+            <div className="font-medium text-lg">{calculatedBestPlayer.displayName}</div>
+            <div className="text-sm text-gray-600">
+              HCP: {calculatedBestPlayer.handicap}
+            </div>
+            <div className="mt-2">
+              <div className="text-sm">Win probability against {opponent.displayName}:</div>
+              <div className="flex items-center mt-1">
+                <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden mr-2">
+                  <div
+                    className="h-full bg-green-500"
+                    style={{ width: `${winProb * 100}%` }}
+                  ></div>
+                </div>
+                <span className="font-medium">
+                  {Math.round(winProb * 100)}%
+                </span>
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex flex-col md:flex-row justify-center gap-4">
             <button
-              className="px-4 py-2 bg-blue-600 text-white rounded mr-4"
-              onClick={() => {
-                // Try to go back to previous screen
-                setCurrentStep(`game-${gameNum}`);
-              }}
+              className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+              onClick={() => confirmBestPlayer(gameNum)}
             >
-              Go Back
+              Confirm This Player
             </button>
+            <button
+              className="px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+              onClick={() => chooseDifferentPlayer(gameNum)}
+            >
+              Choose Different Player
+            </button>
+          </div>
+        </div>
+        
+        <div className="flex justify-center">
+          <button
+            className="px-4 py-2 bg-gray-300 text-gray-800 rounded"
+            onClick={handleReset}
+          >
+            Start Over
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  // Render function for manual player selection screen
+  const renderManualPlayerSelection = (gameNum) => {
+    const game = `game${gameNum}`;
+    const opponent = selectedPlayers[game]?.away;
+    
+    if (!opponent) {
+      return (
+        <div className="container mx-auto p-4 text-center">
+          <h1 className="text-3xl font-bold mb-6 text-center">
+            Pool Team Stats Analyzer
+          </h1>
+          <div className="bg-yellow-50 p-6 rounded-lg mb-8 border border-yellow-300">
+            <h2 className="text-xl font-semibold mb-4">Missing Opponent Data</h2>
+            <p className="mb-4">
+              Cannot find opponent information for this game.
+            </p>
             <button
               className="px-4 py-2 bg-gray-300 text-gray-800 rounded"
               onClick={handleReset}
@@ -1365,95 +1437,20 @@ const handleOpponentSelection = (gameNum, player) => {
             </button>
           </div>
         </div>
-      </div>
-    );
-  }
-  
-  // Calculate win probability safely
-  let winProb = 0.5; // Default value
-  try {
-    winProb = calculateWinProbability(
-      calculatedBestPlayer.name,
-      opponent.name,
-      teamStats,
-      allMatches
-    );
-  } catch (error) {
-    console.error("Error calculating win probability:", error);
-  }
-  
-  return (
-    <div className="container mx-auto p-4">
-      <FloatingInfoButton onClick={() => setShowInfoPopup(true)} />
-      <InfoPopup isOpen={showInfoPopup} onClose={() => setShowInfoPopup(false)} />
-      <h1 className="text-3xl font-bold mb-6 text-center">
-        Pool Team Stats Analyzer
-      </h1>
-      
-      <div className="bg-blue-50 p-6 rounded-lg mb-8">
-        <h2 className="text-xl font-semibold mb-4">Optimal Player for Game {gameNum}</h2>
-        <p className="mb-4">
-          Based on the Hungarian algorithm, your optimal player to match against {opponent.displayName} is:
-        </p>
-        
-        <div className="p-4 border rounded-lg bg-green-50 border-green-500 mb-6">
-          <div className="font-medium text-lg">{calculatedBestPlayer.displayName}</div>
-          <div className="text-sm text-gray-600">
-            HCP: {calculatedBestPlayer.handicap}
-          </div>
-          <div className="mt-2">
-            <div className="text-sm">Win probability against {opponent.displayName}:</div>
-            <div className="flex items-center mt-1">
-              <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden mr-2">
-                <div
-                  className="h-full bg-green-500"
-                  style={{ width: `${winProb * 100}%` }}
-                ></div>
-              </div>
-              <span className="font-medium">
-                {Math.round(winProb * 100)}%
-              </span>
-            </div>
-          </div>
-        </div>
-        
-        <div className="flex flex-col md:flex-row justify-center gap-4">
-          <button
-            className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-            onClick={() => confirmBestPlayer(gameNum)}
-          >
-            Confirm This Player
-          </button>
-          <button
-            className="px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-            onClick={() => chooseDifferentPlayer(gameNum)}
-          >
-            Choose Different Player
-          </button>
-        </div>
-      </div>
-      
-      <div className="flex justify-center">
-        <button
-          className="px-4 py-2 bg-gray-300 text-gray-800 rounded"
-          onClick={handleReset}
-        >
-          Start Over
-        </button>
-      </div>
-    </div>
-  );
-};
-
-  // NEW: Render function for manual player selection screen
-  const renderManualPlayerSelection = (gameNum) => {
-    const game = `game${gameNum}`;
-    const opponent = selectedPlayers[game].away;
+      );
+    }
     
     return (
       <div className="container mx-auto p-4">
-        <FloatingInfoButton onClick={() => setShowInfoPopup(true)} />
-        <InfoPopup isOpen={showInfoPopup} onClose={() => setShowInfoPopup(false)} />
+        <FloatingInfoButton onClick={() => dispatch({ 
+          type: ACTION_TYPES.SET_INFO_POPUP, 
+          payload: true 
+        })} />
+        <InfoPopup isOpen={showInfoPopup} onClose={() => dispatch({ 
+          type: ACTION_TYPES.SET_INFO_POPUP, 
+          payload: false 
+        })} />
+        
         <h1 className="text-3xl font-bold mb-6 text-center">
           Pool Team Stats Analyzer
         </h1>
@@ -1515,22 +1512,52 @@ const handleOpponentSelection = (gameNum, player) => {
     );
   };
 
-  // Helper function to render the opponent selection screen
-  const renderOpponentSelectionScreen = (gameNumber) => {
-    const game = `game${gameNumber}`;
+  // Render function for opponent selection screen
+  const renderOpponentSelectionScreen = (gameNum) => {
+    const game = `game${gameNum}`;
+    const homePlayer = selectedPlayers[game]?.home;
+    
+    if (!homePlayer) {
+      return (
+        <div className="container mx-auto p-4 text-center">
+          <h1 className="text-3xl font-bold mb-6 text-center">
+            Pool Team Stats Analyzer
+          </h1>
+          <div className="bg-yellow-50 p-6 rounded-lg mb-8 border border-yellow-300">
+            <h2 className="text-xl font-semibold mb-4">Missing Player Data</h2>
+            <p className="mb-4">
+              No player selected for this game yet.
+            </p>
+            <button
+              className="px-4 py-2 bg-gray-300 text-gray-800 rounded"
+              onClick={handleReset}
+            >
+              Start Over
+            </button>
+          </div>
+        </div>
+      );
+    }
     
     return (
       <div className="container mx-auto p-4">
-        <FloatingInfoButton onClick={() => setShowInfoPopup(true)} />
-        <InfoPopup isOpen={showInfoPopup} onClose={() => setShowInfoPopup(false)} />
+        <FloatingInfoButton onClick={() => dispatch({ 
+          type: ACTION_TYPES.SET_INFO_POPUP, 
+          payload: true 
+        })} />
+        <InfoPopup isOpen={showInfoPopup} onClose={() => dispatch({ 
+          type: ACTION_TYPES.SET_INFO_POPUP, 
+          payload: false 
+        })} />
+        
         <h1 className="text-3xl font-bold mb-6 text-center">
           Pool Team Stats Analyzer
         </h1>
 
         <div className="bg-blue-50 p-6 rounded-lg mb-8">
-          <h2 className="text-xl font-semibold mb-4">Game {gameNumber} Opponent Selection</h2>
+          <h2 className="text-xl font-semibold mb-4">Game {gameNum} Opponent Selection</h2>
           <p className="mb-4">
-            You've selected {selectedPlayers[game].home?.displayName} for Game {gameNumber}. 
+            You've selected {homePlayer.displayName} for Game {gameNum}. 
             Which player did the opponent choose?
           </p>
 
@@ -1538,7 +1565,7 @@ const handleOpponentSelection = (gameNum, player) => {
           {availableAwayPlayers.map((player) => {
             // Calculate win probability against our player
             const winProb = calculateWinProbability(
-              selectedPlayers[game].home?.name,
+              homePlayer.name,
               player.name,
               teamStats,
               allMatches
@@ -1548,7 +1575,7 @@ const handleOpponentSelection = (gameNum, player) => {
               <div
                 key={`opponent-player-${player.name}`}
                 className="p-4 border rounded-lg cursor-pointer hover:bg-blue-100"
-                onClick={() => handleOpponentSelection(gameNumber, player)}
+                onClick={() => handleOpponentSelection(gameNum, player)}
               >
                 <div className="font-medium">{player.displayName}</div>
                 <div className="text-sm text-gray-600">
@@ -1586,218 +1613,371 @@ const handleOpponentSelection = (gameNum, player) => {
     );
   };
 
-  // Render Game 2, 3, 4 selection with similar pattern
-  const renderGameSelection = useCallback((gameNum) => {
-  console.log(`Rendering Game ${gameNum} selection screen`);
-  
-  const game = `game${gameNum}`;
-  const weSelectBlind = 
-    (wonCoinFlip && (gameNum === 2 || gameNum === 4)) || 
-    (!wonCoinFlip && (gameNum === 1 || gameNum === 3));
-
-  // Check if we have a previous auto-selection to show
-  const showLastSelection = lastAutoSelectedPlayer && 
-                          lastAutoSelectedPlayer.gameNumber === gameNum - 1;
-
-  if (weSelectBlind) {
-    // We put up blind
-    return (
-      <div className="container mx-auto p-4">
-        <FloatingInfoButton onClick={() => setShowInfoPopup(true)} />
-        <InfoPopup isOpen={showInfoPopup} onClose={() => setShowInfoPopup(false)} />
-        <h1 className="text-3xl font-bold mb-6 text-center">
-          Pool Team Stats Analyzer
-        </h1>
-
-        {/* Show last auto-selected player notification if available */}
-        {showLastSelection && (
-          <div className="bg-green-50 p-4 rounded-lg mb-4 border border-green-300">
-            <h3 className="font-medium text-green-800 mb-2">
-              Auto-Selected Player for Previous Game
-            </h3>
-            <p>
-              <span className="font-semibold">{lastAutoSelectedPlayer.player.displayName}</span> was 
-              automatically chosen as the best match against {lastAutoSelectedPlayer.opponent.displayName} with 
-              a {Math.round(lastAutoSelectedPlayer.winProbability * 100)}% win probability.
-            </p>
-          </div>
-        )}
-
-        <div className="bg-blue-50 p-6 rounded-lg mb-8">
-          <h2 className="text-xl font-semibold mb-4">Game {gameNum} Selection</h2>
-          <p className="mb-4">
-            You need to put up a player blind for Game {gameNum}.
-          </p>
-          
-          {isCalculating ? (
-            <div className="text-center py-4">
-              <p>Finding optimal player...</p>
-              <div className="mt-2 w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-                <div className="h-full bg-blue-500 animate-pulse"></div>
-              </div>
-            </div>
-          ) : (
-            <>
-              <p className="mb-4">
-                Recommended player based on Hungarian algorithm analysis:{" "}
-                <span className="font-bold">
-                  {optimalPlayer?.displayName || "Calculating..."}
-                </span>
-              </p>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {availableHomePlayers.map((player) => {
-                  // Calculate average win probability against all opponents
-                  const avgWinProb = availableAwayPlayers.reduce((sum, opponent) => {
-                    return sum + calculateWinProbability(
-                      player.name,
-                      opponent.name,
-                      teamStats,
-                      allMatches
-                    );
-                  }, 0) / Math.max(1, availableAwayPlayers.length);
-                  
-                  return (
-                    <div
-                      key={`select-player-${player.name}`}
-                      className={`p-4 border rounded-lg cursor-pointer hover:bg-blue-100 ${
-                        player.name === optimalPlayer?.name
-                          ? "bg-green-50 border-green-500"
-                          : ""
-                      }`}
-                      onClick={() => selectPlayerForGame(game, "home", player)}
-                    >
-                      <div className="font-medium">{player.displayName}</div>
-                      <div className="text-sm text-gray-600">
-                        HCP: {player.handicap}
-                      </div>
-                      <div className="mt-2">
-                        <div className="text-sm">Average win probability:</div>
-                        <div className="flex items-center mt-1">
-                          <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden mr-2">
-                            <div
-                              className="h-full bg-green-500"
-                              style={{ width: `${avgWinProb * 100}%` }}
-                            ></div>
-                          </div>
-                          <span className="font-medium">
-                            {Math.round(avgWinProb * 100)}%
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </>
-          )}
-        </div>
-
-        <div className="flex justify-center">
-          <button
-            className="px-4 py-2 bg-gray-300 text-gray-800 rounded"
-            onClick={handleReset}
-          >
-            Start Over
-          </button>
-        </div>
-      </div>
-    );
-  } else {
-    // Opponent puts up blind, we respond
-    return (
-      <div className="container mx-auto p-4">
-        <FloatingInfoButton onClick={() => setShowInfoPopup(true)} />
-        <InfoPopup isOpen={showInfoPopup} onClose={() => setShowInfoPopup(false)} />
-        <h1 className="text-3xl font-bold mb-6 text-center">
-          Pool Team Stats Analyzer
-        </h1>
-
-        {/* Show last auto-selected player notification if available */}
-        {showLastSelection && (
-          <div className="bg-green-50 p-4 rounded-lg mb-4 border border-green-300">
-            <h3 className="font-medium text-green-800 mb-2">
-              Auto-Selected Player for Previous Game
-            </h3>
-            <p>
-              <span className="font-semibold">{lastAutoSelectedPlayer.player.displayName}</span> was 
-              automatically chosen as the best match against {lastAutoSelectedPlayer.opponent.displayName} with 
-              a {Math.round(lastAutoSelectedPlayer.winProbability * 100)}% win probability.
-            </p>
-          </div>
-        )}
-
-        <div className="bg-blue-50 p-6 rounded-lg mb-8">
-          <h2 className="text-xl font-semibold mb-4">Game {gameNum} Selection</h2>
-          <p className="mb-4">
-            The opponent selects a player for Game {gameNum}. Which player did they choose?
-          </p>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {availableAwayPlayers.map((player) => (
-              <div
-                key={`select-opponent-${player.name}`}
-                className="p-4 border rounded-lg cursor-pointer hover:bg-blue-100"
-                onClick={() => handleOpponentSelection(gameNum, player)}
-              >
-                <div className="font-medium">{player.displayName}</div>
-                <div className="text-sm text-gray-600">
-                  HCP: {player.handicap}
-                </div>
-                <div className="mt-2">
-                  <div className="text-sm">Record:</div>
-                  <div className="text-sm mt-1">
-                    {player.wins}-{player.losses} ({player.winPercentage}%)
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="flex justify-center">
-          <button
-            className="px-4 py-2 bg-gray-300 text-gray-800 rounded"
-            onClick={handleReset}
-          >
-            Start Over
-          </button>
-        </div>
-      </div>
-    );
-  }
-}
-, [wonCoinFlip, lastAutoSelectedPlayer, availableHomePlayers, availableAwayPlayers, 
-    teamStats, allMatches, optimalPlayer, isCalculating, showInfoPopup, handleReset]);
-
-  const renderContent = useMemo(() => {
-    // Render loading state
-    if (loading) {
-      return <div className="text-center p-8">Loading data...</div>;
-    }
-
-    // Render error state
-    if (error) {
-      return <div className="text-center p-8 text-red-600">{error}</div>;
-    }
-
-    // NEW: Add cases for the new step types in the main render logic
-    if (currentStep.match(/^game-\d-best-player$/)) {
-      const gameNumber = parseInt(currentStep.split('-')[1]);
-      return renderBestPlayerConfirmation(gameNumber);
-    }
+  // Render function for game selection screens
+  const renderGameSelection = (gameNum) => {
+    const game = `game${gameNum}`;
+    const weSelectBlind = 
+      (wonCoinFlip && (gameNum === 2 || gameNum === 4)) || 
+      (!wonCoinFlip && (gameNum === 1 || gameNum === 3));
     
-    if (currentStep.match(/^game-\d-manual-selection$/)) {
-      const gameNumber = parseInt(currentStep.split('-')[1]);
-      return renderManualPlayerSelection(gameNumber);
-    }
-
-  // Render team selection step
-    if (currentStep === "team-selection") {
+    // Show last auto-selected player notification if available
+    const showLastSelection = lastAutoSelectedPlayer && 
+                              lastAutoSelectedPlayer.gameNumber === gameNum - 1;
+    
+    if (weSelectBlind) {
+      // We put up blind
       return (
         <div className="container mx-auto p-4">
-          <FloatingInfoButton onClick={() => setShowInfoPopup(true)} />
-          <InfoPopup isOpen={showInfoPopup} onClose={() => setShowInfoPopup(false)} />
+          <FloatingInfoButton onClick={() => dispatch({ 
+            type: ACTION_TYPES.SET_INFO_POPUP, 
+            payload: true 
+          })} />
+          <InfoPopup isOpen={showInfoPopup} onClose={() => dispatch({ 
+            type: ACTION_TYPES.SET_INFO_POPUP, 
+            payload: false 
+          })} />
+          
+          <h1 className="text-3xl font-bold mb-6 text-center">
+            Pool Team Stats Analyzer
+          </h1>
+
+          {showLastSelection && (
+            <div className="bg-green-50 p-4 rounded-lg mb-4 border border-green-300">
+              <h3 className="font-medium text-green-800 mb-2">
+                Auto-Selected Player for Previous Game
+              </h3>
+              <p>
+                <span className="font-semibold">{lastAutoSelectedPlayer.player.displayName}</span> was 
+                automatically chosen as the best match against {lastAutoSelectedPlayer.opponent.displayName} with 
+                a {Math.round(lastAutoSelectedPlayer.winProbability * 100)}% win probability.
+              </p>
+            </div>
+          )}
+
+          <div className="bg-blue-50 p-6 rounded-lg mb-8">
+            <h2 className="text-xl font-semibold mb-4">Game {gameNum} Selection</h2>
+            <p className="mb-4">
+              You need to put up a player blind for Game {gameNum}.
+            </p>
+            
+            {isCalculating ? (
+              <div className="text-center py-4">
+                <p>Finding optimal player...</p>
+                <div className="mt-2 w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                  <div className="h-full bg-blue-500 animate-pulse"></div>
+                </div>
+              </div>
+            ) : (
+              <>
+                <p className="mb-4">
+                  Recommended player based on Hungarian algorithm analysis:{" "}
+                  <span className="font-bold">
+                    {optimalPlayer?.displayName || "Calculating..."}
+                  </span>
+                </p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {availableHomePlayers.map((player) => {
+                    // Calculate average win probability against all opponents
+                    const avgWinProb = availableAwayPlayers.reduce((sum, opponent) => {
+                      return sum + calculateWinProbability(
+                        player.name,
+                        opponent.name,
+                        teamStats,
+                        allMatches
+                      );
+                    }, 0) / Math.max(1, availableAwayPlayers.length);
+                    
+                    return (
+                      <div
+                        key={`select-player-${player.name}`}
+                        className={`p-4 border rounded-lg cursor-pointer hover:bg-blue-100 ${
+                          player.name === optimalPlayer?.name
+                            ? "bg-green-50 border-green-500"
+                            : ""
+                        }`}
+                        onClick={() => selectPlayerForGame(game, "home", player)}
+                      >
+                        <div className="font-medium">{player.displayName}</div>
+                        <div className="text-sm text-gray-600">
+                          HCP: {player.handicap}
+                        </div>
+                        <div className="mt-2">
+                          <div className="text-sm">Average win probability:</div>
+                          <div className="flex items-center mt-1">
+                            <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden mr-2">
+                              <div
+                                className="h-full bg-green-500"
+                                style={{ width: `${avgWinProb * 100}%` }}
+                              ></div>
+                            </div>
+                            <span className="font-medium">
+                              {Math.round(avgWinProb * 100)}%
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </div>
+
+          <div className="flex justify-center">
+            <button
+              className="px-4 py-2 bg-gray-300 text-gray-800 rounded"
+              onClick={handleReset}
+            >
+              Start Over
+            </button>
+          </div>
+        </div>
+      );
+    } else {
+      // Opponent puts up blind, we respond
+      return (
+        <div className="container mx-auto p-4">
+          <FloatingInfoButton onClick={() => dispatch({ 
+            type: ACTION_TYPES.SET_INFO_POPUP, 
+            payload: true 
+          })} />
+          <InfoPopup isOpen={showInfoPopup} onClose={() => dispatch({ 
+            type: ACTION_TYPES.SET_INFO_POPUP, 
+            payload: false 
+          })} />
+          
+          <h1 className="text-3xl font-bold mb-6 text-center">
+            Pool Team Stats Analyzer
+          </h1>
+
+          {showLastSelection && (
+            <div className="bg-green-50 p-4 rounded-lg mb-4 border border-green-300">
+              <h3 className="font-medium text-green-800 mb-2">
+                Auto-Selected Player for Previous Game
+              </h3>
+              <p>
+                <span className="font-semibold">{lastAutoSelectedPlayer.player.displayName}</span> was 
+                automatically chosen as the best match against {lastAutoSelectedPlayer.opponent.displayName} with 
+                a {Math.round(lastAutoSelectedPlayer.winProbability * 100)}% win probability.
+              </p>
+            </div>
+          )}
+
+          <div className="bg-blue-50 p-6 rounded-lg mb-8">
+            <h2 className="text-xl font-semibold mb-4">Game {gameNum} Selection</h2>
+            <p className="mb-4">
+              The opponent selects a player for Game {gameNum}. Which player did they choose?
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {availableAwayPlayers.map((player) => (
+                <div
+                  key={`select-opponent-${player.name}`}
+                  className="p-4 border rounded-lg cursor-pointer hover:bg-blue-100"
+                  onClick={() => handleOpponentSelection(gameNum, player)}
+                >
+                  <div className="font-medium">{player.displayName}</div>
+                  <div className="text-sm text-gray-600">
+                    HCP: {player.handicap}
+                  </div>
+                  <div className="mt-2">
+                    <div className="text-sm">Record:</div>
+                    <div className="text-sm mt-1">
+                      {player.wins}-{player.losses} ({player.winPercentage}%)
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex justify-center">
+            <button
+              className="px-4 py-2 bg-gray-300 text-gray-800 rounded"
+              onClick={handleReset}
+            >
+              Start Over
+            </button>
+          </div>
+        </div>
+      );
+    }
+  };
+  
+  // Render summary screen
+  const renderSummary = () => {
+    // Calculate overall win probability
+    const matchupsWithProbability = Object.values(selectedPlayers)
+      .filter((matchup) => matchup.home && matchup.away)
+      .map((matchup) => ({
+        ...matchup,
+        winProbability: calculateWinProbability(
+          matchup.home.name,
+          matchup.away.name,
+          teamStats,
+          allMatches
+        ),
+      }));
+
+    const overallWinPercentage =
+      matchupsWithProbability.length > 0
+        ? Math.round(
+            (matchupsWithProbability.reduce(
+              (sum, m) => sum + m.winProbability,
+              0,
+            ) /
+              matchupsWithProbability.length) *
+              100,
+          )
+        : 0;
+        
+    return (
+      <div className="container mx-auto p-4">
+        <FloatingInfoButton onClick={() => dispatch({ 
+          type: ACTION_TYPES.SET_INFO_POPUP, 
+          payload: true 
+        })} />
+        <InfoPopup isOpen={showInfoPopup} onClose={() => dispatch({ 
+          type: ACTION_TYPES.SET_INFO_POPUP, 
+          payload: false 
+        })} />
+        
+        <h1 className="text-3xl font-bold mb-6 text-center">
+          Pool Team Stats Analyzer
+        </h1>
+
+        <div className="bg-blue-50 p-6 rounded-lg mb-8">
+          <h2 className="text-xl font-semibold mb-4">Final Matchups</h2>
+          <p className="mb-6">
+            Here are the final player matchups based on the coin flip and
+            selection process:
+          </p>
+
+          <div className="overflow-x-auto mb-6">
+            <table className="w-full table-auto">
+              <thead>
+                <tr className="bg-gray-100">
+                  <th className="p-2 text-left">Game</th>
+                  <th className="p-2 text-left">Our Player</th>
+                  <th className="p-2 text-left">Opponent</th>
+                  <th className="p-2 text-left">Win Probability</th>
+                  <th className="p-2 text-left">Handicap</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[1, 2, 3, 4].map((gameNum) => {
+                  const game = `game${gameNum}`;
+                  const matchup = selectedPlayers[game];
+
+                  // Skip rows where either player is missing
+                  if (!matchup.home || !matchup.away) {
+                    return null;
+                  }
+
+                  const winProb = calculateWinProbability(
+                    matchup.home.name,
+                    matchup.away.name,
+                    teamStats,
+                    allMatches
+                  );
+
+                  return (
+                    <tr key={`summary-${game}`} className="border-t">
+                      <td className="p-2">Game {gameNum}</td>
+                      <td className="p-2">{matchup.home.displayName}</td>
+                      <td className="p-2">{matchup.away.displayName}</td>
+                      <td className="p-2">
+                        <div className="flex items-center">
+                          <div className="w-24 h-4 bg-gray-200 rounded-full overflow-hidden mr-2">
+                            <div
+                              className="h-full bg-green-500"
+                              style={{ width: `${winProb * 100}%` }}
+                            ></div>
+                          </div>
+                          <span>{Math.round(winProb * 100)}%</span>
+                        </div>
+                      </td>
+                      <td className="p-2">
+                        {matchup.home.handicap} vs {matchup.away.handicap}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="mt-6 p-4 bg-gray-50 rounded">
+            <h3 className="font-medium mb-2">Overall Team Win Probability</h3>
+            <div className="text-lg font-bold">{overallWinPercentage}%</div>
+            <p className="text-sm mt-2">
+              {overallWinPercentage > 50
+                ? "Your team has a favorable advantage!"
+                : "The matchup is challenging, but you still have a chance."}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex justify-center">
+          <button
+            className="px-4 py-2 bg-blue-600 text-white rounded"
+            onClick={handleReset}
+          >
+            Start Over
+          </button>
+        </div>
+      </div>
+    );
+  };
+  
+  // Helper functions for best player confirmation
+  const confirmBestPlayer = (gameNum) => {
+    const game = `game${gameNum}`;
+    
+    if (!calculatedBestPlayer) {
+      console.error("Cannot confirm player: calculatedBestPlayer is null");
+      return;
+    }
+    
+    // Select the calculated best player
+    selectPlayerForGame(game, "home", calculatedBestPlayer);
+    
+    // Reset calculated best player
+    dispatch({ type: ACTION_TYPES.SET_BEST_PLAYER, payload: null });
+  };
+  
+  const chooseDifferentPlayer = (gameNum) => {
+    // Reset calculated best player and go to manual selection
+    dispatch({ type: ACTION_TYPES.SET_BEST_PLAYER, payload: null });
+    dispatch({ 
+      type: ACTION_TYPES.SET_CURRENT_STEP, 
+      payload: `game-${gameNum}-manual-selection` 
+    });
+  };
+
+  // Main component return with conditional rendering based on current step
+  return (
+    <>
+      {loading && (
+        <div className="text-center p-8">Loading data...</div>
+      )}
+      
+      {error && (
+        <div className="text-center p-8 text-red-600">{error}</div>
+      )}
+      
+      {!loading && !error && currentStep === "team-selection" && (
+        <div className="container mx-auto p-4">
+          <FloatingInfoButton onClick={() => dispatch({ 
+            type: ACTION_TYPES.SET_INFO_POPUP, 
+            payload: true 
+          })} />
+          <InfoPopup isOpen={showInfoPopup} onClose={() => dispatch({ 
+            type: ACTION_TYPES.SET_INFO_POPUP, 
+            payload: false 
+          })} />
+          
           <h1 className="text-3xl font-bold mb-6 text-center">
             Pool Team Stats Analyzer
           </h1>
@@ -1815,7 +1995,10 @@ const handleOpponentSelection = (gameNum, player) => {
                 <SearchableDropdown
                   options={teams}
                   value={selectedHomeTeam}
-                  onChange={setSelectedHomeTeam}
+                  onChange={(team) => dispatch({
+                    type: ACTION_TYPES.SET_SELECTED_TEAMS,
+                    payload: { homeTeam: team, awayTeam: selectedAwayTeam }
+                  })}
                   placeholder="Type to search teams..."
                 />
               </div>
@@ -1873,7 +2056,10 @@ const handleOpponentSelection = (gameNum, player) => {
                 <SearchableDropdown
                   options={teams}
                   value={selectedAwayTeam}
-                  onChange={setSelectedAwayTeam}
+                  onChange={(team) => dispatch({
+                    type: ACTION_TYPES.SET_SELECTED_TEAMS,
+                    payload: { homeTeam: selectedHomeTeam, awayTeam: team }
+                  })}
                   placeholder="Type to search opponent teams..."
                 />
               </div>
@@ -1933,15 +2119,19 @@ const handleOpponentSelection = (gameNum, player) => {
             </button>
           </div>
         </div>
-      );
-    }
-
-    // Render coin flip step
-    if (currentStep === "coin-flip") {
-      return (
+      )}
+      
+      {!loading && !error && currentStep === "coin-flip" && (
         <div className="container mx-auto p-4">
-          <FloatingInfoButton onClick={() => setShowInfoPopup(true)} />
-          <InfoPopup isOpen={showInfoPopup} onClose={() => setShowInfoPopup(false)} />
+          <FloatingInfoButton onClick={() => dispatch({ 
+            type: ACTION_TYPES.SET_INFO_POPUP, 
+            payload: true 
+          })} />
+          <InfoPopup isOpen={showInfoPopup} onClose={() => dispatch({ 
+            type: ACTION_TYPES.SET_INFO_POPUP, 
+            payload: false 
+          })} />
+          
           <h1 className="text-3xl font-bold mb-6 text-center">
             Pool Team Stats Analyzer
           </h1>
@@ -1978,305 +2168,44 @@ const handleOpponentSelection = (gameNum, player) => {
             </button>
           </div>
         </div>
-      );
-    }
-
-    if (currentStep.match(/^game-\d-opponent$/)) {
-      const gameNumber = parseInt(currentStep.split('-')[1]);
-      return renderOpponentSelectionScreen(gameNumber);
-    }
-
-  // Render Game 1 selection
-    if (currentStep === "game-1") {
-      // Loser of coin flip puts up blind for game 1
-      if (wonCoinFlip) {
-        // We won the coin flip, opponent puts up blind for game 1
-        return (
-          <div className="container mx-auto p-4">
-            <FloatingInfoButton onClick={() => setShowInfoPopup(true)} />
-            <InfoPopup isOpen={showInfoPopup} onClose={() => setShowInfoPopup(false)} />
-            <h1 className="text-3xl font-bold mb-6 text-center">
-              Pool Team Stats Analyzer
-            </h1>
-
-            <div className="bg-blue-50 p-6 rounded-lg mb-8">
-              <h2 className="text-xl font-semibold mb-4">Game 1 Selection</h2>
-              <p className="mb-4">
-                You won the coin flip! The opponent puts up a player blind for
-                Game 1. Which player did they choose?
-              </p>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {availableAwayPlayers.map((player) => (
-                  <div
-                    key={`select-opponent-${player.name}`}
-                    className="p-4 border rounded-lg cursor-pointer hover:bg-blue-100"
-                    onClick={() => handleOpponentSelection(1, player)}
-                  >
-                    <div className="font-medium">{player.displayName}</div>
-                    <div className="text-sm text-gray-600">
-                      HCP: {player.handicap}
-                    </div>
-                    <div className="mt-2">
-                      <div className="text-sm">Record:</div>
-                      <div className="text-sm mt-1">
-                        {player.wins}-{player.losses} ({player.winPercentage}%)
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex justify-center">
-              <button
-                className="px-4 py-2 bg-gray-300 text-gray-800 rounded"
-                onClick={handleReset}
-              >
-                Start Over
-              </button>
-            </div>
-          </div>
-        );
-      } else {
-        // We lost the coin flip, so we put up blind
-        return (
-          <div className="container mx-auto p-4">
-            <FloatingInfoButton onClick={() => setShowInfoPopup(true)} />
-            <InfoPopup isOpen={showInfoPopup} onClose={() => setShowInfoPopup(false)} />
-            <h1 className="text-3xl font-bold mb-6 text-center">
-              Pool Team Stats Analyzer
-            </h1>
-
-            <div className="bg-blue-50 p-6 rounded-lg mb-8">
-              <h2 className="text-xl font-semibold mb-4">Game 1 Selection</h2>
-              <p className="mb-4">
-                You lost the coin flip! You need to put up a player blind for Game 1.
-              </p>
-              
-              {isCalculating ? (
-                <div className="text-center py-4">
-                  <p>Finding optimal player...</p>
-                  <div className="mt-2 w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-                    <div className="h-full bg-blue-500 animate-pulse"></div>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <p className="mb-4">
-                    Recommended player based on Hungarian algorithm analysis:{" "}
-                    <span className="font-bold">
-                      {optimalPlayer?.displayName || "Calculating..."}
-                    </span>
-                  </p>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {availableHomePlayers.map((player) => {
-                      // Calculate average win probability against all opponents
-                      const avgWinProb = availableAwayPlayers.reduce((sum, opponent) => {
-                        return sum + calculateWinProbability(
-                          player.name,
-                          opponent.name,
-                          teamStats,
-                          allMatches
-                        );
-                      }, 0) / Math.max(1, availableAwayPlayers.length);
-                      
-                      return (
-                        <div
-                          key={`select-player-${player.name}`}
-                          className={`p-4 border rounded-lg cursor-pointer hover:bg-blue-100 ${
-                            player.name === optimalPlayer?.name
-                              ? "bg-green-50 border-green-500"
-                              : ""
-                          }`}
-                          onClick={() => selectPlayerForGame("game1", "home", player)}
-                        >
-                          <div className="font-medium">{player.displayName}</div>
-                          <div className="text-sm text-gray-600">
-                            HCP: {player.handicap}
-                          </div>
-                          <div className="mt-2">
-                            <div className="text-sm">Average win probability:</div>
-                            <div className="flex items-center mt-1">
-                              <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden mr-2">
-                                <div
-                                  className="h-full bg-green-500"
-                                  style={{ width: `${avgWinProb * 100}%` }}
-                                ></div>
-                              </div>
-                              <span className="font-medium">
-                                {Math.round(avgWinProb * 100)}%
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </>
-              )}
-            </div>
-
-            <div className="flex justify-center">
-              <button
-                className="px-4 py-2 bg-gray-300 text-gray-800 rounded"
-                onClick={handleReset}
-              >
-                Start Over
-              </button>
-            </div>
-          </div>
-        );
-      }
-    }
-
-    // Render summary
-    if (currentStep === "summary") {
-      // Calculate overall win probability
-      const matchupsWithProbability = Object.values(selectedPlayers)
-        .filter((matchup) => matchup.home && matchup.away)
-        .map((matchup) => ({
-          ...matchup,
-          winProbability: calculateWinProbability(
-            matchup.home.name,
-            matchup.away.name,
-            teamStats,  // Add this parameter
-            allMatches  // Add this parameter
-          ),
-        }));
-
-      const overallWinPercentage =
-        matchupsWithProbability.length > 0
-          ? Math.round(
-              (matchupsWithProbability.reduce(
-                (sum, m) => sum + m.winProbability,
-                0,
-              ) /
-                matchupsWithProbability.length) *
-                100,
-            )
-          : 0;
-
-      return (
-        <div className="container mx-auto p-4">
-        <FloatingInfoButton onClick={() => setShowInfoPopup(true)} />
-        <InfoPopup isOpen={showInfoPopup} onClose={() => setShowInfoPopup(false)} />
-          <h1 className="text-3xl font-bold mb-6 text-center">
-            Pool Team Stats Analyzer
-          </h1>
-
-          <div className="bg-blue-50 p-6 rounded-lg mb-8">
-            <h2 className="text-xl font-semibold mb-4">Final Matchups</h2>
-            <p className="mb-6">
-              Here are the final player matchups based on the coin flip and
-              selection process:
-            </p>
-
-            <div className="overflow-x-auto mb-6">
-              <table className="w-full table-auto">
-                <thead>
-                  <tr className="bg-gray-100">
-                    <th className="p-2 text-left">Game</th>
-                    <th className="p-2 text-left">Our Player</th>
-                    <th className="p-2 text-left">Opponent</th>
-                    <th className="p-2 text-left">Win Probability</th>
-                    <th className="p-2 text-left">Handicap</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[1, 2, 3, 4].map((gameNum) => {
-                    const game = `game${gameNum}`;
-                    const matchup = selectedPlayers[game];
-
-                    // Skip rows where either player is missing
-                    if (!matchup.home || !matchup.away) {
-                      return null;
-                    }
-
-                    const winProb = calculateWinProbability(
-                      matchup.home.name,
-                      matchup.away.name,
-                      teamStats,  // Add this parameter
-                      allMatches  // Add this parameter
-                    );
-
-                    return (
-                      <tr key={`summary-${game}`} className="border-t">
-                        <td className="p-2">Game {gameNum}</td>
-                        <td className="p-2">{matchup.home.displayName}</td>
-                        <td className="p-2">{matchup.away.displayName}</td>
-                        <td className="p-2">
-                          <div className="flex items-center">
-                            <div className="w-24 h-4 bg-gray-200 rounded-full overflow-hidden mr-2">
-                              <div
-                                className="h-full bg-green-500"
-                                style={{ width: `${winProb * 100}%` }}
-                              ></div>
-                            </div>
-                            <span>{Math.round(winProb * 100)}%</span>
-                          </div>
-                        </td>
-                        <td className="p-2">
-                          {matchup.home.handicap} vs {matchup.away.handicap}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="mt-6 p-4 bg-gray-50 rounded">
-              <h3 className="font-medium mb-2">Overall Team Win Probability</h3>
-              <div className="text-lg font-bold">{overallWinPercentage}%</div>
-              <p className="text-sm mt-2">
-                {overallWinPercentage > 50
-                  ? "Your team has a favorable advantage!"
-                  : "The matchup is challenging, but you still have a chance."}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex justify-center">
-            <button
-              className="px-4 py-2 bg-blue-600 text-white rounded"
-              onClick={handleReset}
-            >
-              Start Over
-            </button>
-          </div>
+      )}
+      
+      {!loading && !error && currentStep.match(/^game-\d-best-player$/) && (
+        renderBestPlayerConfirmation(parseInt(currentStep.split('-')[1]))
+      )}
+      
+      {!loading && !error && currentStep.match(/^game-\d-manual-selection$/) && (
+        renderManualPlayerSelection(parseInt(currentStep.split('-')[1]))
+      )}
+      
+      {!loading && !error && currentStep.match(/^game-\d-opponent$/) && (
+        renderOpponentSelectionScreen(parseInt(currentStep.split('-')[1]))
+      )}
+      
+      {!loading && !error && currentStep.match(/^game-\d$/) && !currentStep.includes('-') && (
+        renderGameSelection(parseInt(currentStep.split('-')[1]))
+      )}
+      
+      {!loading && !error && currentStep === "summary" && (
+        renderSummary()
+      )}
+      
+      {!loading && !error && 
+       !["team-selection", "coin-flip", "summary"].includes(currentStep) && 
+       !currentStep.match(/^game-\d(-opponent|-best-player|-manual-selection)?$/) && (
+        <div className="container mx-auto p-4 text-center">
+          <h1 className="text-3xl font-bold mb-6">Pool Team Stats Analyzer</h1>
+          <p className="mb-4">Unknown state: {currentStep}</p>
+          <button
+            className="px-4 py-2 bg-blue-600 text-white rounded mt-4"
+            onClick={handleReset}
+          >
+            Start Over
+          </button>
         </div>
-      );
-    }
-    console.log(`Current step: ${currentStep}`);
-  if (currentStep.match(/^game-\d$/)) {
-    const gameNumber = parseInt(currentStep.split('-')[1], 10);
-    if (gameNumber >= 1 && gameNumber <= 4) {
-      console.log(`Rendering game ${gameNumber} via fallback`);
-      return renderGameSelection(gameNumber);
-    }
-  }
-
-  // Final fallback
-  return (
-    <div className="container mx-auto p-4 text-center">
-      <h1 className="text-3xl font-bold mb-6">Pool Team Stats Analyzer</h1>
-      <p>Unrecognized state: {currentStep}</p>
-      <button
-        className="px-4 py-2 bg-blue-600 text-white rounded mt-4"
-        onClick={handleReset}
-      >
-        Start Over
-      </button>
-    </div>
+      )}
+    </>
   );
-  }, [currentStep, loading, error, selectedPlayers, availableHomePlayers, 
-      availableAwayPlayers, renderGameSelection, renderBestPlayerConfirmation, 
-      renderManualPlayerSelection]);
-
-  return renderContent;
-
 }
 
 export default App;
