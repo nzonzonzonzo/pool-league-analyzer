@@ -291,6 +291,7 @@ const renderGameSelection = (gameNum) => {
       // ... rest of the header section
     </div>
   ) : null;
+}
 
 // Hungarian algorithm implementation
 function hungarianOptimalAssignment(matrix) {
