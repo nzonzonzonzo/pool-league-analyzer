@@ -1174,11 +1174,19 @@ const handleOpponentSelection = (gameNum, player) => {
     console.error("Invalid player object in handleOpponentSelection");
     return;
   }
-
-    // Add this check to prevent multiple selections
+  
   const game = `game${gameNum}`;
-  if (selectedPlayers[game]?.home) {
-    console.log(`Already selected a player for game ${gameNum}, skipping`);
+  
+  // Modified guard clause - only check for home player if we're in a step
+  // that involves selecting a home player in response to an opponent
+  if (currentStep === `game-${gameNum}` && selectedPlayers[game]?.home) {
+    console.log(`Already selected a home player for game ${gameNum}, skipping`);
+    return;
+  }
+  
+  // For opponent selection screens, check if we already have an away player
+  if (currentStep === `game-${gameNum}-opponent` && selectedPlayers[game]?.away) {
+    console.log(`Already selected an away player for game ${gameNum}, skipping`);
     return;
   }
   
