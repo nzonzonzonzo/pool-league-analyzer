@@ -281,10 +281,24 @@ const renderGameSelection = (gameNum) => {
     (!wonCoinFlip && (gameNum === 1 || gameNum === 3));
 
   // Common header section that shows the previous selection
+  const renderGameSelection = (gameNum) => {
+  const game = `game${gameNum}`;
+  const previousGameNum = gameNum - 1;
+  const previousGame = `game${previousGameNum}`;
+  
+  // Get the previous matchup if available
+  const previousMatchup = previousGameNum >= 1 ? selectedPlayers[previousGame] : null;
+  
+  // Determine if we select blind based on game number and coin flip
+  const weSelectBlind = 
+    (wonCoinFlip && (gameNum === 2 || gameNum === 4)) || 
+    (!wonCoinFlip && (gameNum === 1 || gameNum === 3));
+
+  // Header section showing previous matchup
   const headerSection = previousMatchup && previousMatchup.home && previousMatchup.away ? (
     <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
       <h3 className="font-medium mb-2">Previous Game Matchup</h3>
-      <p>For Game {gameNum - 1}, the optimal matchup was determined to be:</p>
+      <p>For Game {previousGameNum}, the optimal matchup was determined to be:</p>
       <div className="mt-2 flex items-center justify-between p-3 bg-white rounded-lg">
         <div>
           <span className="font-bold">{previousMatchup.home.displayName}</span>
@@ -304,152 +318,7 @@ const renderGameSelection = (gameNum) => {
         </div>
       </div>
     </div>
-  ) : null;
-
-  if (weSelectBlind) {
-    // We put up blind
-    return (
-      <div className="container mx-auto p-4">
-        <FloatingInfoButton onClick={() => setShowInfoPopup(true)} />
-        <InfoPopup isOpen={showInfoPopup} onClose={() => setShowInfoPopup(false)} />
-        <h1 className="text-3xl font-bold mb-6 text-center">
-          Pool Team Stats Analyzer
-        </h1>
-
-        {headerSection}
-
-        <div className="bg-blue-50 p-6 rounded-lg mb-8">
-          <h2 className="text-xl font-semibold mb-4">Game {gameNum} Selection</h2>
-          <p className="mb-4">
-            You need to put up a player blind for Game {gameNum}.
-          </p>
-          
-          {isCalculating ? (
-            <div className="text-center py-4">
-              <p>Finding optimal player...</p>
-              <div className="mt-2 w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-                <div className="h-full bg-blue-500 animate-pulse"></div>
-              </div>
-            </div>
-          ) : (
-            <>
-              <p className="mb-4">
-                Recommended player based on Hungarian algorithm analysis:{" "}
-                <span className="font-bold">
-                  {optimalPlayer?.displayName || "Calculating..."}
-                </span>
-              </p>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {availableHomePlayers.map((player) => {
-                  // Calculate average win probability against all opponents
-                  const avgWinProb = availableAwayPlayers.reduce((sum, opponent) => {
-                    return sum + calculateWinProbability(
-                      player.name,
-                      opponent.name,
-                      teamStats,
-                      allMatches
-                    );
-                  }, 0) / Math.max(1, availableAwayPlayers.length);
-                  
-                  return (
-                    <div
-                      key={`select-player-${player.name}`}
-                      className={`p-4 border rounded-lg cursor-pointer hover:bg-blue-100 ${
-                        player.name === optimalPlayer?.name
-                          ? "bg-green-50 border-green-500"
-                          : ""
-                      }`}
-                      onClick={() => selectPlayerForGame(game, "home", player)}
-                    >
-                      <div className="font-medium">{player.displayName}</div>
-                      <div className="text-sm text-gray-600">
-                        HCP: {player.handicap}
-                      </div>
-                      <div className="mt-2">
-                        <div className="text-sm">Average win probability:</div>
-                        <div className="flex items-center mt-1">
-                          <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden mr-2">
-                            <div
-                              className="h-full bg-green-500"
-                              style={{ width: `${avgWinProb * 100}%` }}
-                            ></div>
-                          </div>
-                          <span className="font-medium">
-                            {Math.round(avgWinProb * 100)}%
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </>
-          )}
-        </div>
-
-        <div className="flex justify-center">
-          <button
-            className="px-4 py-2 bg-gray-300 text-gray-800 rounded"
-            onClick={handleReset}
-          >
-            Start Over
-          </button>
-        </div>
-      </div>
-    );
-  } else {
-    // Opponent puts up blind, we respond
-    return (
-      <div className="container mx-auto p-4">
-        <FloatingInfoButton onClick={() => setShowInfoPopup(true)} />
-        <InfoPopup isOpen={showInfoPopup} onClose={() => setShowInfoPopup(false)} />
-        <h1 className="text-3xl font-bold mb-6 text-center">
-          Pool Team Stats Analyzer
-        </h1>
-
-        {headerSection}
-
-        <div className="bg-blue-50 p-6 rounded-lg mb-8">
-          <h2 className="text-xl font-semibold mb-4">Game {gameNum} Selection</h2>
-          <p className="mb-4">
-            The opponent selects a player for Game {gameNum}. Which player did they choose?
-          </p>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {availableAwayPlayers.map((player) => (
-              <div
-                key={`select-opponent-${player.name}`}
-                className="p-4 border rounded-lg cursor-pointer hover:bg-blue-100"
-                onClick={() => handleOpponentSelection(gameNum, player)}
-              >
-                <div className="font-medium">{player.displayName}</div>
-                <div className="text-sm text-gray-600">
-                  HCP: {player.handicap}
-                </div>
-                <div className="mt-2">
-                  <div className="text-sm">Record:</div>
-                  <div className="text-sm mt-1">
-                    {player.wins}-{player.losses} ({player.winPercentage}%)
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="flex justify-center">
-          <button
-            className="px-4 py-2 bg-gray-300 text-gray-800 rounded"
-            onClick={handleReset}
-          >
-            Start Over
-          </button>
-        </div>
-      </div>
-    );
-  }
-};
+  );
 
 // Hungarian algorithm implementation
 function hungarianOptimalAssignment(matrix) {
@@ -1555,6 +1424,47 @@ function App() {
         <h1 className="text-3xl font-bold mb-6 text-center">
           Pool Team Stats Analyzer
         </h1>
+          <p className="mb-6">
+            Ideal matchups based on the Hungarian algorithm optimization:
+          </p>
+        <div className="overflow-x-auto mb-6">
+            <table className="w-full table-auto">
+              <thead>
+                <tr className="bg-gray-100">
+                  <th className="p-2 text-left">Game</th>
+                  <th className="p-2 text-left">Our Player</th>
+                  <th className="p-2 text-left">Opponent</th>
+                  <th className="p-2 text-left">Win Probability</th>
+                  <th className="p-2 text-left">Handicap</th>
+                </tr>
+              </thead>
+              <tbody>
+                {matchupsWithProbability
+                  .sort((a, b) => a.game - b.game)
+                  .map((matchup) => (
+                    <tr key={`summary-game${matchup.game}`} className="border-t">
+                      <td className="p-2">Game {matchup.game}</td>
+                      <td className="p-2">{matchup.home.displayName}</td>
+                      <td className="p-2">{matchup.away.displayName}</td>
+                      <td className="p-2">
+                        <div className="flex items-center">
+                          <div className="w-24 h-4 bg-gray-200 rounded-full overflow-hidden mr-2">
+                            <div
+                              className="h-full bg-green-500"
+                              style={{ width: `${matchup.winProbability * 100}%` }}
+                            ></div>
+                          </div>
+                          <span>{Math.round(matchup.winProbability * 100)}%</span>
+                        </div>
+                      </td>
+                      <td className="p-2">
+                        {matchup.home.handicap} vs {matchup.away.handicap}
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
 
         <div className="bg-blue-50 p-6 rounded-lg mb-8">
           <h2 className="text-xl font-semibold mb-4">Coin Flip Result</h2>
@@ -1763,7 +1673,7 @@ function App() {
           <h1 className="text-3xl font-bold mb-6 text-center">
             Pool Team Stats Analyzer
           </h1>
-
+            {headerSection}
           <div className="bg-blue-50 p-6 rounded-lg mb-8">
             <h2 className="text-xl font-semibold mb-4">Game {gameNum} Selection</h2>
             <p className="mb-4">
@@ -1853,7 +1763,7 @@ function App() {
           <h1 className="text-3xl font-bold mb-6 text-center">
             Pool Team Stats Analyzer
           </h1>
-
+          {headerSection}
           <div className="bg-blue-50 p-6 rounded-lg mb-8">
             <h2 className="text-xl font-semibold mb-4">Game {gameNum} Selection</h2>
             <p className="mb-4">
@@ -1904,7 +1814,7 @@ function App() {
   if (currentStep === "summary") {
     console.log("Rendering summary page with selected players:", selectedPlayers);
     
-    // Calculate overall win probability based on final matchups
+    // Use the actual selected players from previous steps
     const matchupsWithProbability = Object.entries(selectedPlayers)
       .filter(([game, matchup]) => matchup.home && matchup.away)
       .map(([game, matchup]) => ({
@@ -1940,11 +1850,11 @@ function App() {
         <h1 className="text-3xl font-bold mb-6 text-center">
           Pool Team Stats Analyzer
         </h1>
-
+        {headerSection}
         <div className="bg-blue-50 p-6 rounded-lg mb-8">
           <h2 className="text-xl font-semibold mb-4">Final Matchups</h2>
           <p className="mb-6">
-            Here are the final player matchups based on the Hungarian algorithm optimization:
+            Here are the final player matchups based on the selection process:
           </p>
 
           <div className="overflow-x-auto mb-6">
@@ -1991,7 +1901,7 @@ function App() {
             <div className="text-lg font-bold">{overallWinPercentage}%</div>
             <p className="text-sm mt-2">
               {overallWinPercentage > 50
-                ? "Your team has a favorable advantage based on Hungarian algorithm optimization!"
+                ? "Your team has a favorable advantage!"
                 : "The matchup is challenging, but you still have a chance."}
             </p>
           </div>
@@ -2009,20 +1919,20 @@ function App() {
     );
   }
 
-  // Default fallback view
-  return (
-    <div className="text-center p-8">
-      <FloatingInfoButton onClick={() => setShowInfoPopup(true)} />
-      <InfoPopup isOpen={showInfoPopup} onClose={() => setShowInfoPopup(false)} />
-      <p>Unknown step: {currentStep}</p>
-      <button
-        className="px-4 py-2 bg-blue-600 text-white rounded mt-4"
-        onClick={handleReset}
-      >
-        Start Over
-      </button>
-    </div>
-  );
-}
+    // Default fallback view
+    return (
+      <div className="text-center p-8">
+        <FloatingInfoButton onClick={() => setShowInfoPopup(true)} />
+        <InfoPopup isOpen={showInfoPopup} onClose={() => setShowInfoPopup(false)} />
+        <p>Unknown step: {currentStep}</p>
+        <button
+          className="px-4 py-2 bg-blue-600 text-white rounded mt-4"
+          onClick={handleReset}
+        >
+          Start Over
+        </button>
+      </div>
+    );
+  }
 
 export default App;
