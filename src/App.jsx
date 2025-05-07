@@ -1823,6 +1823,7 @@ function App() {
               Start Over
             </button>
           </div>
+      </div>
       );
     }
 }
