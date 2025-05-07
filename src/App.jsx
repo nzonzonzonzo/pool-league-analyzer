@@ -1183,7 +1183,6 @@ const handleOpponentSelection = (gameNum, player) => {
   }
   
   console.log(`Handling opponent selection for Game ${gameNum}: ${player.name}`);
-  const game = `game${gameNum}`;
   setIsCalculating(true);
   
   // Make a deep copy of the opponent
@@ -2249,7 +2248,7 @@ const handleOpponentSelection = (gameNum, player) => {
       renderManualPlayerSelection]);
 
   return renderContent;
-  
+
 }
 
 export default App;
