@@ -1086,8 +1086,8 @@ function App() {
     setCalculatedBestPlayer(null);
   };
 
-  // MODIFIED: Handle opponent selection and find best response
-  const handleOpponentSelection = (gameNum, player) => {
+  // CORRECTED: Handle opponent selection and find best response
+const handleOpponentSelection = (gameNum, player) => {
   const game = `game${gameNum}`;
   setIsCalculating(true);
   
@@ -1125,12 +1125,15 @@ function App() {
       if (bestPlayer) {
         console.log(`Found best player: ${bestPlayer.name}`);
         
-        // MODIFIED: Don't always go to confirmation - check the game flow
-        // If we won coin flip and it's game 1/3 OR we lost and it's game 2/4,
-        // we should go directly to the selection without confirmation
+        // FIXED LOGIC: If we won coin flip and it's game 1/3 OR we lost and it's game 2/4,
+        // we should go to the confirmation screen
         if ((wonCoinFlip && (gameNum === 1 || gameNum === 3)) || 
             (!wonCoinFlip && (gameNum === 2 || gameNum === 4))) {
-          // In these cases, automatically select the best player without confirmation
+          // Show confirmation screen
+          setCalculatedBestPlayer(bestPlayer);
+          setCurrentStep(`game-${gameNum}-best-player`);
+        } else {
+          // Automatically select the best player
           setSelectedPlayers(prev => ({
             ...prev,
             [game]: {
@@ -1141,16 +1144,12 @@ function App() {
           
           setAvailableHomePlayers(prev => prev.filter(p => p.name !== bestPlayer.name));
           
+          // Move to next game
           setTimeout(() => {
             setCurrentStep(gameNum < 4 ? `game-${gameNum + 1}` : "summary");
-            setIsCalculating(false);
           }, 100);
-        } else {
-          // In other cases, we want confirmation
-          setCalculatedBestPlayer(bestPlayer);
-          setCurrentStep(`game-${gameNum}-best-player`);
-          setIsCalculating(false);
         }
+        setIsCalculating(false);
       } else {
         console.error("No best player found");
         alert("Could not find optimal player. Please try again.");
