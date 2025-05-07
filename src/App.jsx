@@ -294,32 +294,6 @@ const renderGameSelection = (gameNum) => {
     (wonCoinFlip && (gameNum === 2 || gameNum === 4)) || 
     (!wonCoinFlip && (gameNum === 1 || gameNum === 3));
 
-  // Header section showing previous matchup
-  const headerSection = previousMatchup && previousMatchup.home && previousMatchup.away ? (
-    <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-      <h3 className="font-medium mb-2">Previous Game Matchup</h3>
-      <p>For Game {previousGameNum}, the optimal matchup was determined to be:</p>
-      <div className="mt-2 flex items-center justify-between p-3 bg-white rounded-lg">
-        <div>
-          <span className="font-bold">{previousMatchup.home.displayName}</span>
-          <span className="text-gray-500 mx-1">vs</span>
-          <span className="font-bold">{previousMatchup.away.displayName}</span>
-        </div>
-        <div className="text-sm">
-          <span className="mr-2">Win probability:</span>
-          <span className="font-medium text-green-600">
-            {Math.round(calculateWinProbability(
-              previousMatchup.home.name,
-              previousMatchup.away.name,
-              teamStats,
-              allMatches
-            ) * 100)}%
-          </span>
-        </div>
-      </div>
-    </div>
-  );
-
 // Hungarian algorithm implementation
 function hungarianOptimalAssignment(matrix) {
   if (!matrix || matrix.length === 0) return [];
