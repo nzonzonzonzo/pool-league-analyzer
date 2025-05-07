@@ -285,14 +285,6 @@ const renderGameSelection = (gameNum) => {
     (wonCoinFlip && (gameNum === 2 || gameNum === 4)) || 
     (!wonCoinFlip && (gameNum === 1 || gameNum === 3));
 
-  // Common header section that shows the previous selection
-  const headerSection = previousMatchup && previousMatchup.home && previousMatchup.away ? (
-    <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-      // ... rest of the header section
-    </div>
-  ) : null;
-
-
   // Header section showing previous matchup
   const headerSection = previousMatchup && previousMatchup.home && previousMatchup.away ? (
     <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
