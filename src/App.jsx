@@ -1893,20 +1893,21 @@ function App() {
     );
   }
 
-    // Default fallback view
-    return (
-      <div className="text-center p-8">
-        <FloatingInfoButton onClick={() => setShowInfoPopup(true)} />
-        <InfoPopup isOpen={showInfoPopup} onClose={() => setShowInfoPopup(false)} />
-        <p>Unknown step: {currentStep}</p>
-        <button
-          className="px-4 py-2 bg-blue-600 text-white rounded mt-4"
-          onClick={handleReset}
-        >
-          Start Over
-        </button>
-      </div>
-    );
-  }
+  // Default fallback view
+  return (
+    <div className="text-center p-8">
+      <FloatingInfoButton onClick={() => setShowInfoPopup(true)} />
+      <InfoPopup isOpen={showInfoPopup} onClose={() => setShowInfoPopup(false)} />
+      <p>Unknown step: {currentStep}</p>
+      <button
+        className="px-4 py-2 bg-blue-600 text-white rounded mt-4"
+        onClick={handleReset}
+      >
+        Start Over
+      </button>
+    </div>
+  );
+}
+  
 
 export default App;
