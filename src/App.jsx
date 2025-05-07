@@ -1113,31 +1113,32 @@ const selectPlayerForGame = (game, team, player) => {
   const confirmBestPlayer = (gameNum) => {
   const game = `game${gameNum}`;
   
+  console.log(`Confirming best player for game ${gameNum}:`, calculatedBestPlayer?.name);
+  
   // Check if calculatedBestPlayer exists before using it
   if (!calculatedBestPlayer) {
     console.error("Cannot confirm player: calculatedBestPlayer is null");
+    alert("Error confirming player. Please try again.");
     return; // Exit if no player is selected
   }
   
   // Create a local copy to work with
-  const playerToConfirm = {...calculatedBestPlayer};
+  const playerToConfirm = JSON.parse(JSON.stringify(calculatedBestPlayer));
   
-  // First update selected players state with the confirmed player
-  setSelectedPlayers(prevState => {
-    const newState = {...prevState};
-    newState[game] = {
-      ...newState[game],
-      home: playerToConfirm
-    };
-    return newState;
-  });
-  
-  // Then update available players list
+  // First update available players list
   setAvailableHomePlayers(prevPlayers => 
     prevPlayers.filter(p => p.name !== playerToConfirm.name)
   );
   
-  // Reset the calculated best player before navigation
+  // Then update selected players state with the confirmed player
+  setSelectedPlayers(prevState => {
+    const newState = JSON.parse(JSON.stringify(prevState));
+    if (!newState[game]) newState[game] = {};
+    newState[game].home = playerToConfirm;
+    return newState;
+  });
+  
+  // Reset the calculated best player
   setCalculatedBestPlayer(null);
   
   // Navigate to the next step after a delay
@@ -1150,6 +1151,8 @@ const selectPlayerForGame = (game, team, player) => {
 
   // NEW: Function to choose a different player instead
 const chooseDifferentPlayer = (gameNum) => {
+  console.log(`Choosing different player for game ${gameNum}`);
+  
   // Reset calculated best player first
   setCalculatedBestPlayer(null);
   
@@ -1217,45 +1220,21 @@ const handleOpponentSelection = (gameNum, player) => {
       console.log(`Found best player: ${bestPlayer.name}`);
       const bestPlayerCopy = JSON.parse(JSON.stringify(bestPlayer));
       
+      // RESTORED CONFIRMATION FLOW
       // For games that require confirmation
       if ((wonCoinFlip && (gameNum === 1 || gameNum === 3)) || 
           (!wonCoinFlip && (gameNum === 2 || gameNum === 4))) {
         
-        // ALTERNATIVE APPROACH: Skip the confirmation screen for now
-        // since that's where we're having problems
-        
-        // Update player selection directly
-        setAvailableHomePlayers(prev => 
-          prev.filter(p => p.name !== bestPlayerCopy.name)
-        );
-        
-        setSelectedPlayers(prev => {
-          const result = {...prev};
-          if (!result[game]) result[game] = { away: opponentCopy };
-          result[game].home = bestPlayerCopy;
-          return result;
-        });
-        
-        // Navigate to next game
-        setTimeout(() => {
-          const nextStep = gameNum < 4 ? `game-${gameNum + 1}` : "summary";
-          console.log(`Navigating directly to: ${nextStep}`);
-          setCurrentStep(nextStep);
-          setIsCalculating(false);
-        }, 500);
-        
-        /* ORIGINAL APPROACH - Temporarily disabled
-        // Set the calculated best player state
+        // First set the calculated best player state
         setCalculatedBestPlayer(bestPlayerCopy);
         
-        // Navigate to confirmation screen
+        // Then navigate to confirmation screen
         setTimeout(() => {
-          const nextStep = `game-${gameNum}-best-player`;
-          console.log(`Navigating to confirmation screen: ${nextStep}`);
-          setCurrentStep(nextStep);
+          const confirmationStep = `game-${gameNum}-best-player`;
+          console.log(`Navigating to confirmation screen: ${confirmationStep}`);
+          setCurrentStep(confirmationStep);
           setIsCalculating(false);
-        }, 500);
-        */
+        }, 300);
       } else {
         // Auto-select player for games that don't need confirmation
         setAvailableHomePlayers(prev => 
@@ -1275,7 +1254,7 @@ const handleOpponentSelection = (gameNum, player) => {
           console.log(`Navigating to: ${nextStep}`);
           setCurrentStep(nextStep);
           setIsCalculating(false);
-        }, 500);
+        }, 300);
       }
     } catch (error) {
       console.error("Error in handleOpponentSelection:", error);
@@ -1311,21 +1290,42 @@ const handleOpponentSelection = (gameNum, player) => {
   const game = `game${gameNum}`;
   const opponent = selectedPlayers[game]?.away;
   
+  console.log(`Rendering confirmation screen for game ${gameNum}`);
+  console.log(`calculatedBestPlayer:`, calculatedBestPlayer);
+  console.log(`opponent:`, opponent);
+  
   // Add defensive checks to prevent null reference errors
   if (!calculatedBestPlayer || !opponent) {
-    console.log("Missing data for confirmation screen. Redirecting to next game.");
+    console.error("Missing data for confirmation screen");
     
-    // If we don't have the necessary data, skip to the next game
-    setTimeout(() => {
-      const nextStep = gameNum < 4 ? `game-${gameNum + 1}` : "summary";
-      setCurrentStep(nextStep);
-    }, 100);
-    
-    // Show a loading state until navigation completes
     return (
       <div className="container mx-auto p-4 text-center">
-        <h2>Processing your selection...</h2>
-        <p>Please wait a moment while we prepare the next step.</p>
+        <h1 className="text-3xl font-bold mb-6 text-center">
+          Pool Team Stats Analyzer
+        </h1>
+        <div className="bg-yellow-50 p-6 rounded-lg mb-8 border border-yellow-300">
+          <h2 className="text-xl font-semibold mb-4">Data Loading Error</h2>
+          <p className="mb-4">
+            There was a problem loading the player data for confirmation.
+          </p>
+          <div className="mt-4">
+            <button
+              className="px-4 py-2 bg-blue-600 text-white rounded mr-4"
+              onClick={() => {
+                // Try to go back to previous screen
+                setCurrentStep(`game-${gameNum}`);
+              }}
+            >
+              Go Back
+            </button>
+            <button
+              className="px-4 py-2 bg-gray-300 text-gray-800 rounded"
+              onClick={handleReset}
+            >
+              Start Over
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
