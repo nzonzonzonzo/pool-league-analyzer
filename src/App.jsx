@@ -1,9 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import "./App.css";
 
-// Add this with your other state declarations
-const processingSelectionRef = useRef(null);
-
 // Name formatting utility - more economical implementation
 const formatName = (fullName) => {
   if (!fullName || typeof fullName !== 'string') return fullName;
@@ -869,6 +866,9 @@ function App() {
   const [isCalculating, setIsCalculating] = useState(false);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // Add this with your other state declarations
+  const processingSelectionRef = useRef(null);
   
   // Data states
   const [allMatches, setAllMatches] = useState([]);
