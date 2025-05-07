@@ -271,47 +271,6 @@ function makeMatrixCopy(matrix) {
   return matrix.map(row => [...row]);
 }
 
-// Modify the renderGameSelection function to show previous selections
-const renderGameSelection = (gameNum) => {
-  const game = `game${gameNum}`;
-  const previousGameNum = gameNum - 1;
-  const previousGame = `game${previousGameNum}`;
-  
-  // Get the previous matchup if available
-  const previousMatchup = previousGameNum >= 1 ? selectedPlayers[previousGame] : null;
-  
-  // Determine if we select blind based on game number and coin flip
-  const weSelectBlind = 
-    (wonCoinFlip && (gameNum === 2 || gameNum === 4)) || 
-    (!wonCoinFlip && (gameNum === 1 || gameNum === 3));
-
-  // Header section showing previous matchup
-  const headerSection = previousMatchup && previousMatchup.home && previousMatchup.away ? (
-    <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-      <h3 className="font-medium mb-2">Previous Game Matchup</h3>
-      <p>For Game {previousGameNum}, the optimal matchup was determined to be:</p>
-      <div className="mt-2 flex items-center justify-between p-3 bg-white rounded-lg">
-        <div>
-          <span className="font-bold">{previousMatchup.home.displayName}</span>
-          <span className="text-gray-500 mx-1">vs</span>
-          <span className="font-bold">{previousMatchup.away.displayName}</span>
-        </div>
-        <div className="text-sm">
-          <span className="mr-2">Win probability:</span>
-          <span className="font-medium text-green-600">
-            {Math.round(calculateWinProbability(
-              previousMatchup.home.name,
-              previousMatchup.away.name,
-              teamStats,
-              allMatches
-            ) * 100)}%
-          </span>
-        </div>
-      </div>
-    </div>
-  )
-};
-
 
 // Hungarian algorithm implementation
 function hungarianOptimalAssignment(matrix) {
