@@ -317,7 +317,7 @@ const renderGameSelection = (gameNum) => {
         </div>
       </div>
     </div>
-  );
+  )
 
 
 
