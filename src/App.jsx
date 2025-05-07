@@ -869,7 +869,6 @@ function App() {
 
   // Add this with your other state declarations
   const processingSelectionRef = useRef(null);
-  const processingSelectionRef = useRef(null);
   const renderCountRef = useRef({});
   
   // Data states
