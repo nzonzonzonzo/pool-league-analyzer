@@ -274,15 +274,6 @@ function makeMatrixCopy(matrix) {
 // Modify the renderGameSelection function to show previous selections
 const renderGameSelection = (gameNum) => {
   const game = `game${gameNum}`;
-  const previousGame = `game${gameNum - 1}`;
-  const previousMatchup = selectedPlayers[previousGame];
-  const weSelectBlind = 
-    (wonCoinFlip && (gameNum === 2 || gameNum === 4)) || 
-    (!wonCoinFlip && (gameNum === 1 || gameNum === 3));
-
-  // Common header section that shows the previous selection
-  const renderGameSelection = (gameNum) => {
-  const game = `game${gameNum}`;
   const previousGameNum = gameNum - 1;
   const previousGame = `game${previousGameNum}`;
   
@@ -293,6 +284,13 @@ const renderGameSelection = (gameNum) => {
   const weSelectBlind = 
     (wonCoinFlip && (gameNum === 2 || gameNum === 4)) || 
     (!wonCoinFlip && (gameNum === 1 || gameNum === 3));
+
+  // Common header section that shows the previous selection
+  const headerSection = previousMatchup && previousMatchup.home && previousMatchup.away ? (
+    <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+      // ... rest of the header section
+    </div>
+  ) : null;
 
 // Hungarian algorithm implementation
 function hungarianOptimalAssignment(matrix) {
@@ -1908,6 +1906,6 @@ function App() {
     </div>
   );
 }
-  
+
 
 export default App;
