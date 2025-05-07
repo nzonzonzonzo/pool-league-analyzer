@@ -869,7 +869,6 @@ function App() {
 
   // Add this with your other state declarations
   const processingSelectionRef = useRef(null);
-  const renderCountRef = useRef({});
   
   // Data states
   const [allMatches, setAllMatches] = useState([]);
@@ -1037,50 +1036,48 @@ const [lastAutoSelectedPlayer, setLastAutoSelectedPlayer] = useState(null);
 
   // Function to choose player for a game
 const selectPlayerForGame = (game, team, player) => {
-  // Basic validation
+  // Validate inputs
   if (!player || !player.name || !game || !team) {
     console.error("Invalid parameters in selectPlayerForGame");
     return;
   }
   
-  // Use a unique key for each selection
-  const selectionKey = `${game}-${team}-${Date.now()}`;
-  
-  // Check if we're already processing
-  if (processingSelectionRef.current) {
-    console.log(`Already processing a selection, skipping`);
+  // Check if we're already processing a selection for this game
+  if (processingSelectionRef.current === game) {
+    console.log(`Already processing a selection for ${game}, skipping`);
     return;
   }
   
   // Set the processing flag
-  processingSelectionRef.current = selectionKey;
+  processingSelectionRef.current = game;
+  
   console.log(`Selecting ${team} player for ${game}:`, player.name);
   
-  // Make a copy of the player
-  const playerCopy = { ...player };
+  // Store local copies
+  const selectedPlayer = JSON.parse(JSON.stringify(player));
   const gameStr = String(game);
   const teamStr = String(team);
   
-  // Update available players
+  // Update player lists based on team
   if (teamStr === "home") {
     setAvailableHomePlayers(prev => 
-      prev.filter(p => p.name !== playerCopy.name)
+      prev.filter(p => p.name !== selectedPlayer.name)
     );
   } else {
     setAvailableAwayPlayers(prev => 
-      prev.filter(p => p.name !== playerCopy.name)
+      prev.filter(p => p.name !== selectedPlayer.name)
     );
   }
   
-  // Update selections
+  // Update selected players state
   setSelectedPlayers(prev => {
-    const updated = { ...prev };
+    const updated = {...prev};
     if (!updated[gameStr]) {
       updated[gameStr] = {};
     }
     updated[gameStr] = {
       ...updated[gameStr],
-      [teamStr]: playerCopy
+      [teamStr]: selectedPlayer
     };
     return updated;
   });
@@ -1088,8 +1085,9 @@ const selectPlayerForGame = (game, team, player) => {
   // Determine next screen
   const gameNumber = parseInt(gameStr.replace("game", ""), 10);
   
-  // Navigate after brief delay to allow state updates
+  // Navigate after state updates
   setTimeout(() => {
+    // Choose next screen based on context
     let nextStep;
     
     if (teamStr === "home" && 
@@ -1103,8 +1101,12 @@ const selectPlayerForGame = (game, team, player) => {
     console.log(`Navigating to: ${nextStep}`);
     setCurrentStep(nextStep);
     
-    // Clear processing flag
-    processingSelectionRef.current = null;
+    // Clear the processing flag
+    setTimeout(() => {
+      if (processingSelectionRef.current === gameStr) {
+        processingSelectionRef.current = null;
+      }
+    }, 500);
   }, 300);
 };
 
@@ -1187,58 +1189,55 @@ const chooseDifferentPlayer = (gameNum) => {
 
   // CORRECTED: Handle opponent selection and find best response
 const handleOpponentSelection = (gameNum, player) => {
-  // Basic validation
   if (!player || !player.name) {
     console.error("Invalid player object in handleOpponentSelection");
     return;
   }
   
-  // Use a unique key for each selection to avoid conflicts
-  const selectionKey = `game${gameNum}-opponent-${Date.now()}`;
+  const game = `game${gameNum}`;
   
-  // Check if we're already processing a selection
-  if (processingSelectionRef.current) {
-    console.log(`Already processing a selection, skipping`);
+  // Check if we're already processing a selection for this game
+  if (processingSelectionRef.current === game) {
+    console.log(`Already processing a selection for game ${gameNum}, skipping`);
     return;
   }
   
-  // Set the processing flag with unique key
-  processingSelectionRef.current = selectionKey;
+  // Set the processing flag
+  processingSelectionRef.current = game;
+  
   console.log(`Handling opponent selection for Game ${gameNum}: ${player.name}`);
   setIsCalculating(true);
   
-  // Make a copy of the opponent and update state
-  const opponentCopy = { ...player };
-  const game = `game${gameNum}`;
+  // Make a deep copy of the opponent
+  const opponentCopy = JSON.parse(JSON.stringify(player));
   
-  // First update the opponent selection
+  // Update opponent in state and remove from available players
   setSelectedPlayers(prev => {
-    const result = { ...prev };
+    const result = {...prev};
     if (!result[game]) result[game] = {};
     result[game].away = opponentCopy;
     return result;
   });
   
-  // Remove player from available opponents
   setAvailableAwayPlayers(prev => 
     prev.filter(p => p.name !== opponentCopy.name)
   );
   
-  // Then find the best response player
+  // Use a longer timeout to ensure state updates complete
   setTimeout(() => {
     try {
-      // Get current state
+      // Use fresh state
       const currentHomePlayers = [...availableHomePlayers];
       const remainingAwayPlayers = [...availableAwayPlayers];
+      const currentPlayerSelections = {...selectedPlayers};
       
-      // Find best player
       console.log("Finding best response player");
       const bestPlayer = findBestResponsePlayer(
         gameNum,
         opponentCopy,
         currentHomePlayers,
         remainingAwayPlayers,
-        selectedPlayers,
+        currentPlayerSelections,
         teamStats,
         allMatches
       );
@@ -1247,14 +1246,13 @@ const handleOpponentSelection = (gameNum, player) => {
         console.error("No best player found");
         alert("Could not find optimal player. Please try again.");
         setIsCalculating(false);
-        processingSelectionRef.current = null;
         return;
       }
       
       console.log(`Found best player: ${bestPlayer.name}`);
-      const bestPlayerCopy = { ...bestPlayer };
+      const bestPlayerCopy = JSON.parse(JSON.stringify(bestPlayer));
       
-      // Store for banner display
+      // STORE THE AUTO-SELECTED PLAYER
       setLastAutoSelectedPlayer({
         player: bestPlayerCopy,
         opponent: opponentCopy,
@@ -1267,38 +1265,42 @@ const handleOpponentSelection = (gameNum, player) => {
         )
       });
       
-      // Update player selections directly
+      // TEMPORARY SOLUTION: Skip confirmation for all cases
+      // Update player selection directly
       setAvailableHomePlayers(prev => 
         prev.filter(p => p.name !== bestPlayerCopy.name)
       );
       
       setSelectedPlayers(prev => {
-        const result = { ...prev };
+        const result = {...prev};
         if (!result[game]) result[game] = { away: opponentCopy };
         result[game].home = bestPlayerCopy;
         return result;
       });
       
-      // Navigate to next game after updates
+      // Wait to ensure state updates complete
       setTimeout(() => {
-        // Clear calculation flag
-        setIsCalculating(false);
-        
         // Navigate to next game
-        const nextStep = gameNum < 4 ? `game-${gameNum + 1}` : "summary";
-        console.log(`Navigating to ${nextStep}`);
-        setCurrentStep(nextStep);
-        
-        // Clear processing flag
-        processingSelectionRef.current = null;
-      }, 300);
+        if (gameNum < 4) {
+          console.log(`Navigating to game-${gameNum + 1}`);
+          setCurrentStep(`game-${gameNum + 1}`);
+        } else {
+          console.log("Navigating to summary");
+          setCurrentStep("summary");
+        }
+        setIsCalculating(false);
+      }, 500);
     } catch (error) {
       console.error("Error in handleOpponentSelection:", error);
       alert("An error occurred while finding the optimal player.");
       setIsCalculating(false);
+    }
+  setTimeout(() => {
+    if (processingSelectionRef.current === game) {
       processingSelectionRef.current = null;
     }
-  }, 300);
+  }, 1000); // Clear after 1 second to ensure processing is complete
+  }, 500);
 };
 
   // Reset everything and start over
@@ -2269,7 +2271,9 @@ const handleOpponentSelection = (gameNum, player) => {
       </button>
     </div>
   );
-  }, [currentStep, loading, error]);
+  }, [currentStep, loading, error, selectedPlayers, availableHomePlayers, 
+      availableAwayPlayers, renderGameSelection, renderBestPlayerConfirmation, 
+      renderManualPlayerSelection]);
 
   return renderContent;
 
