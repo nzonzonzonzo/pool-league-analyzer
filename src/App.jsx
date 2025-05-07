@@ -310,7 +310,7 @@ const renderGameSelection = (gameNum) => {
       </div>
     </div>
   )
-}
+};
 
 
 // Hungarian algorithm implementation
