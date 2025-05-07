@@ -1032,6 +1032,52 @@ function App() {
   }, 100);
 };
 
+// Step 1: Team selection
+  const handleTeamSelection = () => {
+    if (!selectedHomeTeam || !selectedAwayTeam) {
+      alert("Please select both teams first.");
+      return;
+    }
+
+    // Initialize available players
+    setAvailableHomePlayers([...homeTeamPlayers]);
+    setAvailableAwayPlayers([...awayTeamPlayers]);
+
+    // Move to coin flip step
+    setCurrentStep("coin-flip");
+  };
+
+  // Step 2: Coin flip result
+  const handleCoinFlipResult = (won) => {
+    setWonCoinFlip(won);
+    setCurrentStep("game-1");
+  };
+
+  // NEW: Function to confirm the calculated best player
+  const confirmBestPlayer = (gameNum) => {
+    const game = `game${gameNum}`;
+    
+    // Update selected players with the calculated best player
+    setSelectedPlayers(prev => ({
+      ...prev,
+      [game]: {
+        ...prev[game],
+        home: calculatedBestPlayer,
+      },
+    }));
+    
+    // Remove selected player from available list
+    setAvailableHomePlayers(prev => 
+      prev.filter(p => p.name !== calculatedBestPlayer.name)
+    );
+    
+    // Reset the calculated best player
+    setCalculatedBestPlayer(null);
+    
+    // Navigate to the next game or summary
+    setCurrentStep(gameNum < 4 ? `game-${gameNum + 1}` : "summary");
+  };
+
   // NEW: Function to choose a different player instead
   const chooseDifferentPlayer = (gameNum) => {
     // Navigate to a manual selection screen
