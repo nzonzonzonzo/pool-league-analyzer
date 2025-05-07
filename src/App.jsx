@@ -1110,7 +1110,7 @@ const selectPlayerForGame = (game, team, player) => {
   };
 
   // NEW: Function to confirm the calculated best player
-  const confirmBestPlayer = (gameNum) => {
+const confirmBestPlayer = (gameNum) => {
   const game = `game${gameNum}`;
   
   console.log(`Confirming best player for game ${gameNum}:`, calculatedBestPlayer?.name);
@@ -1138,15 +1138,15 @@ const selectPlayerForGame = (game, team, player) => {
     return newState;
   });
   
-  // Reset the calculated best player
-  setCalculatedBestPlayer(null);
+  // First navigate to next screen
+  const nextStep = gameNum < 4 ? `game-${gameNum + 1}` : "summary";
+  console.log(`Navigating to: ${nextStep}`);
+  setCurrentStep(nextStep);
   
-  // Navigate to the next step after a delay
+  // THEN reset the calculated best player after a short delay
   setTimeout(() => {
-    const nextStep = gameNum < 4 ? `game-${gameNum + 1}` : "summary";
-    console.log(`Navigating to: ${nextStep}`);
-    setCurrentStep(nextStep);
-  }, 300);
+    setCalculatedBestPlayer(null);
+  }, 100);
 };
 
   // NEW: Function to choose a different player instead
