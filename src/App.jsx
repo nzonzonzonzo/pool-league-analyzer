@@ -1132,27 +1132,27 @@ const selectPlayerForGame = (game, team, player) => {
 };
 
 // Step 1: Team selection
-  const handleTeamSelection = () => {
-    if (!selectedHomeTeam || !selectedAwayTeam) {
-      alert("Please select both teams first.");
-      return;
-    }
+const handleTeamSelection = () => {
+  if (!selectedHomeTeam || !selectedAwayTeam) {
+    alert("Please select both teams first.");
+    return;
+  }
 
-    // Initialize available players
-    setAvailableHomePlayers([...homeTeamPlayers]);
-    setAvailableAwayPlayers([...awayTeamPlayers]);
+  // Initialize available players
+  setAvailableHomePlayers([...homeTeamPlayers]);
+  setAvailableAwayPlayers([...awayTeamPlayers]);
 
-    // Move to coin flip step
-    setCurrentStep("coin-flip");
-  };
+  // Move to coin flip step
+  setCurrentStep("coin-flip");
+};
 
-  // Step 2: Coin flip result
-  const handleCoinFlipResult = (won) => {
-    setWonCoinFlip(won);
-    setCurrentStep("game-1");
-  };
+// Step 2: Coin flip result
+const handleCoinFlipResult = (won) => {
+  setWonCoinFlip(won);
+  setCurrentStep("game-1");
+};
 
-  // NEW: Function to confirm the calculated best player
+// NEW: Function to confirm the calculated best player
 const confirmBestPlayer = (gameNum) => {
   const game = `game${gameNum}`;
   
@@ -1192,7 +1192,7 @@ const confirmBestPlayer = (gameNum) => {
   }, 100);
 };
 
-  // NEW: Function to choose a different player instead
+// NEW: Function to choose a different player instead
 const chooseDifferentPlayer = (gameNum) => {
   console.log(`Choosing different player for game ${gameNum}`);
   
@@ -1207,8 +1207,7 @@ const chooseDifferentPlayer = (gameNum) => {
   }, 300);
 };
 
-
-  // CORRECTED: Handle opponent selection and find best response
+// CORRECTED: Handle opponent selection and find best response
 const handleOpponentSelection = (gameNum, player) => {
   if (!player || !player.name) {
     console.error("Invalid player object in handleOpponentSelection");
@@ -1273,21 +1272,33 @@ const handleOpponentSelection = (gameNum, player) => {
       console.log(`Found best player: ${bestPlayer.name}`);
       const bestPlayerCopy = JSON.parse(JSON.stringify(bestPlayer));
       
-      // STORE THE AUTO-SELECTED PLAYER
-      setLastAutoSelectedPlayer({
-        player: bestPlayerCopy,
-        opponent: opponentCopy,
-        gameNumber: gameNum,
-        winProbability: calculateWinProbability(
-          bestPlayerCopy.name,
-          opponentCopy.name,
-          teamStats,
-          allMatches
-        )
-      });
+      // CORRECTED: Set lastAutoSelectedPlayer only for games where auto-selection happens
+      // Auto-select happens when Away is blind (opponent puts up blind)
+      // For "Won Coin Flip": Games 1 and 4 have Away blind and need auto-select for Home
+      // For "Lost Coin Flip": Games 2 and 3 have Away blind and need auto-select for Home
+      const shouldAutoSelect = 
+        (wonCoinFlip && (gameNum === 1 || gameNum === 4)) || 
+        (!wonCoinFlip && (gameNum === 2 || gameNum === 3));
       
-      // TEMPORARY SOLUTION: Skip confirmation for all cases
-      // Update player selection directly
+      if (shouldAutoSelect) {
+        // Set lastAutoSelectedPlayer for auto-selection scenarios
+        setLastAutoSelectedPlayer({
+          gameNumber: gameNum,
+          player: bestPlayerCopy,
+          opponent: opponentCopy,
+          winProbability: calculateWinProbability(
+            bestPlayerCopy.name,
+            opponentCopy.name,
+            teamStats,
+            allMatches
+          )
+        });
+        console.log(`Setting lastAutoSelectedPlayer for Game ${gameNum}`);
+      } else {
+        console.log(`Game ${gameNum} - Not setting lastAutoSelectedPlayer (not an auto-selection game)`);
+      }
+      
+      // Update player selection
       setAvailableHomePlayers(prev => 
         prev.filter(p => p.name !== bestPlayerCopy.name)
       );
@@ -1301,14 +1312,42 @@ const handleOpponentSelection = (gameNum, player) => {
       
       // Wait to ensure state updates complete
       setTimeout(() => {
-        // Navigate to next game
-        if (gameNum < 4) {
-          console.log(`Navigating to game-${gameNum + 1}`);
-          setCurrentStep(`game-${gameNum + 1}`);
-        } else {
-          console.log("Navigating to summary");
+        // CORRECTED: Game progression logic
+        if (gameNum === 4) {
+          // After game 4 opponent selection, always move to summary
+          console.log("Game 4 completed, moving to summary");
           setCurrentStep("summary");
+        } else {
+          // Handle next game progression based on coin flip result
+          const nextGameNum = gameNum + 1;
+          
+          if (wonCoinFlip) {
+            // WON COIN FLIP PROGRESSION
+            if (gameNum === 1) {
+              // After game 1 opponent selection (Away blind), move to game 2 home selection (Home blind)
+              setCurrentStep(`game-${nextGameNum}`);
+            } else if (gameNum === 2) {
+              // After game 2 opponent selection, move to game 3 home selection (Home blind)
+              setCurrentStep(`game-${nextGameNum}`);
+            } else if (gameNum === 3) {
+              // After game 3 opponent selection, move to game 4 opponent selection (Away blind)
+              setCurrentStep(`game-${nextGameNum}-opponent`);
+            }
+          } else {
+            // LOST COIN FLIP PROGRESSION
+            if (gameNum === 1) {
+              // After game 1 opponent selection, move to game 2 opponent selection (Away blind)
+              setCurrentStep(`game-${nextGameNum}-opponent`);
+            } else if (gameNum === 2) {
+              // After game 2 opponent selection (Away blind), move to game 3 opponent selection (Away blind)
+              setCurrentStep(`game-${nextGameNum}-opponent`);
+            } else if (gameNum === 3) {
+              // After game 3 opponent selection (Away blind), move to game 4 home selection (Home blind)
+              setCurrentStep(`game-${nextGameNum}`);
+            }
+          }
         }
+        
         setIsCalculating(false);
       }, 500);
     } catch (error) {
@@ -1316,37 +1355,38 @@ const handleOpponentSelection = (gameNum, player) => {
       alert("An error occurred while finding the optimal player.");
       setIsCalculating(false);
     }
-  setTimeout(() => {
-    if (processingSelectionRef.current === game) {
-      processingSelectionRef.current = null;
-    }
-  }, 1000); // Clear after 1 second to ensure processing is complete
+    
+    setTimeout(() => {
+      if (processingSelectionRef.current === game) {
+        processingSelectionRef.current = null;
+      }
+    }, 1000); // Clear after 1 second to ensure processing is complete
   }, 500);
 };
 
-  // Reset everything and start over
-  const handleReset = () => {
-    setSelectedHomeTeam("");
-    setSelectedAwayTeam("");
-    setHomeTeamPlayers([]);
-    setAwayTeamPlayers([]);
-    setCurrentStep("team-selection");
-    setWonCoinFlip(null);
-    setAvailableHomePlayers([]);
-    setAvailableAwayPlayers([]);
-    setSelectedPlayers({
-      game1: { home: null, away: null },
-      game2: { home: null, away: null },
-      game3: { home: null, away: null },
-      game4: { home: null, away: null },
-    });
-    setOptimalPlayer(null);
-    setCalculatedBestPlayer(null); // NEW: Reset calculated best player
-    setIsCalculating(false);
-  };
+// Reset everything and start over
+const handleReset = () => {
+  setSelectedHomeTeam("");
+  setSelectedAwayTeam("");
+  setHomeTeamPlayers([]);
+  setAwayTeamPlayers([]);
+  setCurrentStep("team-selection");
+  setWonCoinFlip(null);
+  setAvailableHomePlayers([]);
+  setAvailableAwayPlayers([]);
+  setSelectedPlayers({
+    game1: { home: null, away: null },
+    game2: { home: null, away: null },
+    game3: { home: null, away: null },
+    game4: { home: null, away: null },
+  });
+  setOptimalPlayer(null);
+  setCalculatedBestPlayer(null); // NEW: Reset calculated best player
+  setIsCalculating(false);
+};
 
-  // NEW: Render function for best player confirmation stage
-  const renderBestPlayerConfirmation = (gameNum) => {
+// NEW: Render function for best player confirmation stage
+const renderBestPlayerConfirmation = (gameNum) => {
   const game = `game${gameNum}`;
   const opponent = selectedPlayers[game]?.away;
   
