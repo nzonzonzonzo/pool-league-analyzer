@@ -922,19 +922,18 @@ function findOptimalBlindPlayer(availableHomePlayers, availableAwayPlayers, team
   return bestPlayer;
 }
 
-function useThemeToggle() {
+function App() {
+// Simplified state for dark mode
   const [darkMode, setDarkMode] = useState(getInitialTheme());
   
+  // Simple effect for theme changes
   useEffect(() => {
     applyTheme(darkMode);
   }, [darkMode]);
   
-  return [darkMode, () => setDarkMode(!darkMode)];
-}
-
-function App() {
-  // Just one line for theme management!
-  const [darkMode, toggleDarkMode] = useThemeToggle();
+  // Simple toggle function
+  const toggleDarkMode = () => setDarkMode(!darkMode);
+  
   // UI state
   const [showInfoPopup, setShowInfoPopup] = useState(false);
   const [isCalculating, setIsCalculating] = useState(false);
