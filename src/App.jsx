@@ -914,6 +914,31 @@ function App() {
     game4: { home: null, away: null },
   });
 
+   // Define DebugPanel component within App
+  const DebugPanel = () => {
+    if (process.env.NODE_ENV === 'production') return null;
+    
+    return (
+      <div className="fixed bottom-0 right-0 p-2 bg-black text-white text-xs opacity-70 hover:opacity-100 z-50 w-64 h-64 overflow-auto">
+        <div><strong>Current Step:</strong> {currentStep}</div>
+        <div><strong>Won Coin Flip:</strong> {wonCoinFlip ? "Yes" : "No"}</div>
+        <div><strong>Last Auto Selected:</strong> {lastAutoSelectedPlayer ? 
+          `Game ${lastAutoSelectedPlayer.gameNumber}: ${lastAutoSelectedPlayer.player?.displayName} vs ${lastAutoSelectedPlayer.opponent?.displayName}` : 
+          "None"}</div>
+        <div>
+          <strong>Selected Players:</strong>
+          <div className="pl-2">
+            {Object.entries(selectedPlayers || {}).map(([game, matchup]) => (
+              <div key={game}>
+                {game}: {matchup?.home?.displayName || "None"} vs {matchup?.away?.displayName || "None"}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   // Add this with your other state declarations
 const [lastAutoSelectedPlayer, setLastAutoSelectedPlayer] = useState(null);
 
@@ -1209,8 +1234,10 @@ const chooseDifferentPlayer = (gameNum) => {
 };
 
 // FIXED: Handle opponent selection and find best response
+// Complete handleOpponentSelection function with timeout structure preserved
 const handleOpponentSelection = (gameNum, player) => {
-  console.log(`[handleOpponentSelection] GameNum: ${gameNum}, Player: ${player?.name}`);
+  console.log(`[handleOpponentSelection] Game ${gameNum} - Player: ${player?.name}`);
+  console.log(`[handleOpponentSelection] Game ${gameNum} - Coin flip:`, wonCoinFlip ? "WON" : "LOST");
   
   if (!player || !player.name) {
     console.error("Invalid player object in handleOpponentSelection");
@@ -1247,13 +1274,15 @@ const handleOpponentSelection = (gameNum, player) => {
   );
   
   // FIXED: Determine if we should auto-select a home player for this game
+  // For WON coin flip: Auto-select in Games 1 and 4 (Away blind)
+  // For LOST coin flip: Auto-select in Games 2 and 3 (Away blind)
   const shouldAutoSelect = 
     (wonCoinFlip && (gameNum === 1 || gameNum === 4)) || 
     (!wonCoinFlip && (gameNum === 2 || gameNum === 3));
+
+  console.log(`[handleOpponentSelection] Game ${gameNum} - Should auto-select:`, shouldAutoSelect);
   
-  console.log(`[handleOpponentSelection] Should auto-select for Game ${gameNum}:`, shouldAutoSelect);
-  
-  // Set a short timeout to ensure the opponent is saved first
+  // Use a longer timeout to ensure state updates complete
   setTimeout(async () => {
     try {
       if (shouldAutoSelect) {
@@ -1266,6 +1295,8 @@ const handleOpponentSelection = (gameNum, player) => {
         const currentPlayerSelections = {...selectedPlayers};
         
         console.log("Finding best response player");
+        console.log("Available home players:", currentHomePlayers.map(p => p.name));
+        
         const bestPlayer = findBestResponsePlayer(
           gameNum,
           opponentCopy,
@@ -1300,6 +1331,12 @@ const handleOpponentSelection = (gameNum, player) => {
           )
         });
         
+        console.log(`Set lastAutoSelectedPlayer for Game ${gameNum}:`, {
+          gameNumber: gameNum,
+          player: bestPlayerCopy.displayName,
+          opponent: opponentCopy.displayName
+        });
+        
         // Update home player selection
         setAvailableHomePlayers(prev => 
           prev.filter(p => p.name !== bestPlayerCopy.name)
@@ -1315,12 +1352,14 @@ const handleOpponentSelection = (gameNum, player) => {
         console.log(`NOT auto-selecting for Game ${gameNum}`);
       }
       
-      // FIXED: Navigate to next step based on won/lost coin flip
+      // Wait to ensure state updates complete
       setTimeout(() => {
+        // FIXED: Navigate to next step based on won/lost coin flip
         let nextStep;
         
         if (gameNum === 4) {
-          // Always go to summary after Game 4
+          // After game 4 opponent selection, always move to summary
+          console.log("Game 4 completed, moving to summary");
           nextStep = "summary";
         } else {
           // Determine next step based on coin flip and current game
@@ -1354,18 +1393,20 @@ const handleOpponentSelection = (gameNum, player) => {
         console.log(`[handleOpponentSelection] Navigating to: ${nextStep}`);
         setCurrentStep(nextStep);
         setIsCalculating(false);
-        
-        // Clear the processing flag
-        processingSelectionRef.current = null;
       }, 500);
       
     } catch (error) {
       console.error("Error in handleOpponentSelection:", error);
       alert("An error occurred while finding the optimal player.");
       setIsCalculating(false);
-      processingSelectionRef.current = null;
     }
-  }, 300);
+    
+    setTimeout(() => {
+      if (processingSelectionRef.current === game) {
+        processingSelectionRef.current = null;
+      }
+    }, 1000); // Clear after 1 second to ensure processing is complete
+  }, 500);
 };
 
 // Reset everything and start over
@@ -2389,8 +2430,12 @@ if (currentStep === "summary") {
       availableAwayPlayers, renderGameSelection, renderBestPlayerConfirmation, 
       renderManualPlayerSelection]);
 
-  return renderContent;
-
+  return (
+    <>
+      {renderContent}
+      <DebugPanel />
+    </>
+  );
 }
 
 export default App;
