@@ -1053,6 +1053,8 @@ const [lastAutoSelectedPlayer, setLastAutoSelectedPlayer] = useState(null);
 
  // Function to choose player for a game
 const selectPlayerForGame = (game, team, player) => {
+  console.log(`[selectPlayerForGame] Game: ${game}, Team: ${team}, Player: ${player?.name}`);
+  
   // Validate inputs
   if (!player || !player.name || !game || !team) {
     console.error("Invalid parameters in selectPlayerForGame");
@@ -1102,44 +1104,23 @@ const selectPlayerForGame = (game, team, player) => {
   
   // Navigate after state updates
   setTimeout(() => {
-    // Choose next screen based on context
+    // FIXED: Simplified navigation logic
     let nextStep;
     
-    // CORRECTED: For won coin flip, Game 4 is away blind, so from home player selection
-    // we should NOT see Game 4 opponent selection - we should see Game 4 away selection (blind)
-    if (gameStr === "game4") {
-      // For Game 4, we need to handle differently based on coin flip
-      if (wonCoinFlip) {
-        if (teamStr === "home") {
-          // After putting up Game 4 home player when won coin flip,
-          // go to opponent selection
-          nextStep = `game-4-opponent`;
-        } else if (teamStr === "away") {
-          // Won coin flip + Game 4 away selection (should not happen often)
-          nextStep = "summary";
-        }
-      } else {
-        // Lost coin flip
-        if (teamStr === "home") {
-          // After selecting Home for Game 4 (Home blind) when lost coin flip,
-          // go to opponent selection
-          nextStep = `game-4-opponent`;
-        } else if (teamStr === "away") {
-          // Lost coin flip + Game 4 away selection
-          nextStep = "summary";
-        }
-      }
-    } else if (teamStr === "home" && 
-              ((wonCoinFlip && (gameStr === "game2" || gameStr === "game3")) || 
-               (!wonCoinFlip && (gameStr === "game1" || gameStr === "game4")))) {
-      // When we put up a home player blind, next step is opponent selection for the same game
+    // Always go to opponent selection after we select a home player
+    if (teamStr === "home") {
       nextStep = `game-${gameNumber}-opponent`;
-    } else {
-      // For other games, go to the next game
-      nextStep = `game-${gameNumber + 1}`;
+    } 
+    // Almost never happens but if we select an away player, go to next game or summary
+    else {
+      if (gameNumber === 4) {
+        nextStep = "summary";
+      } else {
+        nextStep = `game-${gameNumber + 1}`;
+      }
     }
     
-    console.log(`Navigating to: ${nextStep}`);
+    console.log(`[selectPlayerForGame] Navigating to: ${nextStep}`);
     setCurrentStep(nextStep);
     
     // Clear the processing flag
@@ -1229,6 +1210,8 @@ const chooseDifferentPlayer = (gameNum) => {
 
 // FIXED: Handle opponent selection and find best response
 const handleOpponentSelection = (gameNum, player) => {
+  console.log(`[handleOpponentSelection] GameNum: ${gameNum}, Player: ${player?.name}`);
+  
   if (!player || !player.name) {
     console.error("Invalid player object in handleOpponentSelection");
     return;
@@ -1263,44 +1246,46 @@ const handleOpponentSelection = (gameNum, player) => {
     prev.filter(p => p.name !== opponentCopy.name)
   );
   
-  // Use a longer timeout to ensure state updates complete
-  setTimeout(() => {
+  // FIXED: Determine if we should auto-select a home player for this game
+  const shouldAutoSelect = 
+    (wonCoinFlip && (gameNum === 1 || gameNum === 4)) || 
+    (!wonCoinFlip && (gameNum === 2 || gameNum === 3));
+  
+  console.log(`[handleOpponentSelection] Should auto-select for Game ${gameNum}:`, shouldAutoSelect);
+  
+  // Set a short timeout to ensure the opponent is saved first
+  setTimeout(async () => {
     try {
-      // Use fresh state
-      const currentHomePlayers = [...availableHomePlayers];
-      const remainingAwayPlayers = [...availableAwayPlayers];
-      const currentPlayerSelections = {...selectedPlayers};
-      
-      console.log("Finding best response player");
-      const bestPlayer = findBestResponsePlayer(
-        gameNum,
-        opponentCopy,
-        currentHomePlayers,
-        remainingAwayPlayers,
-        currentPlayerSelections,
-        teamStats,
-        allMatches
-      );
-      
-      if (!bestPlayer) {
-        console.error("No best player found");
-        alert("Could not find optimal player. Please try again.");
-        setIsCalculating(false);
-        processingSelectionRef.current = null;
-        return;
-      }
-      
-      console.log(`Found best player: ${bestPlayer.name}`);
-      const bestPlayerCopy = JSON.parse(JSON.stringify(bestPlayer));
-      
-      // FIXED: Only set auto-selected players for games 1 and 4 in won coin flip
-      // and games 2 and 3 in lost coin flip
-      const awayIsBlind = 
-        (wonCoinFlip && (gameNum === 1 || gameNum === 4)) || 
-        (!wonCoinFlip && (gameNum === 2 || gameNum === 3));
-      
-      if (awayIsBlind) {
-        console.log(`Setting auto-selected player for Game ${gameNum}`);
+      if (shouldAutoSelect) {
+        // For games where we auto-select
+        console.log(`Auto-selecting home player for Game ${gameNum}`);
+        
+        // Use fresh state
+        const currentHomePlayers = [...availableHomePlayers];
+        const remainingAwayPlayers = [...availableAwayPlayers];
+        const currentPlayerSelections = {...selectedPlayers};
+        
+        console.log("Finding best response player");
+        const bestPlayer = findBestResponsePlayer(
+          gameNum,
+          opponentCopy,
+          currentHomePlayers,
+          remainingAwayPlayers,
+          currentPlayerSelections,
+          teamStats,
+          allMatches
+        );
+        
+        if (!bestPlayer) {
+          console.error("No best player found");
+          alert("Could not find optimal player. Please try again.");
+          setIsCalculating(false);
+          processingSelectionRef.current = null;
+          return;
+        }
+        
+        console.log(`Found best player: ${bestPlayer.name}`);
+        const bestPlayerCopy = JSON.parse(JSON.stringify(bestPlayer));
         
         // Set lastAutoSelectedPlayer
         setLastAutoSelectedPlayer({
@@ -1330,59 +1315,57 @@ const handleOpponentSelection = (gameNum, player) => {
         console.log(`NOT auto-selecting for Game ${gameNum}`);
       }
       
-      // FIXED: Simplified game progression - this should work in all cases
+      // FIXED: Navigate to next step based on won/lost coin flip
       setTimeout(() => {
-        // After Game 4, always go to summary
+        let nextStep;
+        
         if (gameNum === 4) {
-          console.log("Game 4 completed, moving to summary");
-          setCurrentStep("summary");
-        }
-        // Otherwise, go to the next game
-        else {
-          const nextGameNum = gameNum + 1;
-          
+          // Always go to summary after Game 4
+          nextStep = "summary";
+        } else {
+          // Determine next step based on coin flip and current game
           if (wonCoinFlip) {
+            // WON COIN FLIP FLOW
             if (gameNum === 1) {
-              // After Game 1 opponent, go to Game 2 (Home selects)
-              setCurrentStep(`game-${nextGameNum}`);
+              // After G1 opponent, go to G2 home selection
+              nextStep = "game-2";
             } else if (gameNum === 2) {
-              // After Game 2 opponent, go to Game 3 (Home selects)
-              setCurrentStep(`game-${nextGameNum}`);
+              // After G2 opponent, go to G3 home selection
+              nextStep = "game-3";
             } else if (gameNum === 3) {
-              // After Game 3 opponent, go to Game 4 (Away selects)
-              setCurrentStep(`game-${nextGameNum}-opponent`);
+              // After G3 opponent, go to G4 opponent selection
+              nextStep = "game-4-opponent";
             }
           } else {
+            // LOST COIN FLIP FLOW
             if (gameNum === 1) {
-              // After Game 1 opponent, go to Game 2 (Away selects)
-              setCurrentStep(`game-${nextGameNum}-opponent`);
+              // After G1 opponent, go to G2 opponent selection
+              nextStep = "game-2-opponent";
             } else if (gameNum === 2) {
-              // After Game 2 opponent, go to Game 3 (Away selects)
-              setCurrentStep(`game-${nextGameNum}-opponent`);
+              // After G2 opponent, go to G3 opponent selection
+              nextStep = "game-3-opponent";
             } else if (gameNum === 3) {
-              // After Game 3 opponent, go to Game 4 (Home selects)
-              setCurrentStep(`game-${nextGameNum}`);
+              // After G3 opponent, go to G4 home selection
+              nextStep = "game-4";
             }
           }
-          
-          console.log(`Moving to next game: ${currentStep}`);
         }
         
+        console.log(`[handleOpponentSelection] Navigating to: ${nextStep}`);
+        setCurrentStep(nextStep);
         setIsCalculating(false);
-      }, 300);
+        
+        // Clear the processing flag
+        processingSelectionRef.current = null;
+      }, 500);
       
     } catch (error) {
       console.error("Error in handleOpponentSelection:", error);
       alert("An error occurred while finding the optimal player.");
       setIsCalculating(false);
+      processingSelectionRef.current = null;
     }
-    
-    setTimeout(() => {
-      if (processingSelectionRef.current === game) {
-        processingSelectionRef.current = null;
-      }
-    }, 1000);
-  }, 500);
+  }, 300);
 };
 
 // Reset everything and start over
@@ -1670,23 +1653,25 @@ const renderBestPlayerConfirmation = (gameNum) => {
 
   // Render Game 2, 3, 4 selection with similar pattern
 const renderGameSelection = useCallback((gameNum) => {
-  console.log(`Rendering Game ${gameNum} selection screen`);
+  console.log(`[renderGameSelection] Game ${gameNum}`);
   
   const game = `game${gameNum}`;
+  
+  // FIXED: Simplified logic to determine if we or opponent selects
   const weSelectBlind = 
     (wonCoinFlip && (gameNum === 2 || gameNum === 3)) || 
     (!wonCoinFlip && (gameNum === 1 || gameNum === 4));
-
-  // FIXED: Simplified auto-selection notification logic
+  
+  // FIXED: Show auto-selection notification only if we have a previous auto-selection
   const showLastSelection = lastAutoSelectedPlayer && 
                           lastAutoSelectedPlayer.gameNumber === gameNum - 1;
-
-  console.log(`Game ${gameNum} - weSelectBlind:`, weSelectBlind);
-  console.log(`Game ${gameNum} - lastAutoSelectedPlayer:`, lastAutoSelectedPlayer);
-  console.log(`Game ${gameNum} - showLastSelection:`, showLastSelection);
+  
+  console.log(`[renderGameSelection] weSelectBlind:`, weSelectBlind);
+  console.log(`[renderGameSelection] lastAutoSelectedPlayer:`, lastAutoSelectedPlayer);
+  console.log(`[renderGameSelection] showLastSelection:`, showLastSelection);
   
   if (weSelectBlind) {
-    // We put up blind
+    // We put up blind (Home selects)
     return (
       <div className="container mx-auto p-4">
         <FloatingInfoButton onClick={() => setShowInfoPopup(true)} />
@@ -1709,11 +1694,88 @@ const renderGameSelection = useCallback((gameNum) => {
           </div>
         )}
 
-        {/* Rest of existing code for home player selection... */}
+        <div className="bg-blue-50 p-6 rounded-lg mb-8">
+          <h2 className="text-xl font-semibold mb-4">Game {gameNum} Selection</h2>
+          <p className="mb-4">
+            You need to put up a player blind for Game {gameNum}.
+          </p>
+          
+          {isCalculating ? (
+            <div className="text-center py-4">
+              <p>Finding optimal player...</p>
+              <div className="mt-2 w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                <div className="h-full bg-blue-500 animate-pulse"></div>
+              </div>
+            </div>
+          ) : (
+            <>
+              <p className="mb-4">
+                Recommended player based on Hungarian algorithm analysis:{" "}
+                <span className="font-bold">
+                  {optimalPlayer?.displayName || "Calculating..."}
+                </span>
+              </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {availableHomePlayers.map((player) => {
+                  // Calculate average win probability against all opponents
+                  const avgWinProb = availableAwayPlayers.reduce((sum, opponent) => {
+                    return sum + calculateWinProbability(
+                      player.name,
+                      opponent.name,
+                      teamStats,
+                      allMatches
+                    );
+                  }, 0) / Math.max(1, availableAwayPlayers.length);
+                  
+                  return (
+                    <div
+                      key={`select-player-${player.name}`}
+                      className={`p-4 border rounded-lg cursor-pointer hover:bg-blue-100 ${
+                        player.name === optimalPlayer?.name
+                          ? "bg-green-50 border-green-500"
+                          : ""
+                      }`}
+                      onClick={() => selectPlayerForGame(game, "home", player)}
+                    >
+                      <div className="font-medium">{player.displayName}</div>
+                      <div className="text-sm text-gray-600">
+                        HCP: {player.handicap}
+                      </div>
+                      <div className="mt-2">
+                        <div className="text-sm">Average win probability:</div>
+                        <div className="flex items-center mt-1">
+                          <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden mr-2">
+                            <div
+                              className="h-full bg-green-500"
+                              style={{ width: `${avgWinProb * 100}%` }}
+                            ></div>
+                          </div>
+                          <span className="font-medium">
+                            {Math.round(avgWinProb * 100)}%
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </div>
+
+        <div className="flex justify-center">
+          <button
+            className="px-4 py-2 bg-gray-300 text-gray-800 rounded"
+            onClick={handleReset}
+          >
+            Start Over
+          </button>
+        </div>
       </div>
     );
   } else {
-    // Opponent puts up blind, we respond
+    // Opponent puts up blind (Away selects)
     return (
       <div className="container mx-auto p-4">
         <FloatingInfoButton onClick={() => setShowInfoPopup(true)} />
@@ -1735,8 +1797,43 @@ const renderGameSelection = useCallback((gameNum) => {
             </p>
           </div>
         )}
-        
-        {/* Rest of existing code for opponent selection... */}
+
+        <div className="bg-blue-50 p-6 rounded-lg mb-8">
+          <h2 className="text-xl font-semibold mb-4">Game {gameNum} Selection</h2>
+          <p className="mb-4">
+            The opponent selects a player for Game {gameNum}. Which player did they choose?
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {availableAwayPlayers.map((player) => (
+              <div
+                key={`select-opponent-${player.name}`}
+                className="p-4 border rounded-lg cursor-pointer hover:bg-blue-100"
+                onClick={() => handleOpponentSelection(gameNum, player)}
+              >
+                <div className="font-medium">{player.displayName}</div>
+                <div className="text-sm text-gray-600">
+                  HCP: {player.handicap}
+                </div>
+                <div className="mt-2">
+                  <div className="text-sm">Record:</div>
+                  <div className="text-sm mt-1">
+                    {player.wins}-{player.losses} ({player.winPercentage}%)
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex justify-center">
+          <button
+            className="px-4 py-2 bg-gray-300 text-gray-800 rounded"
+            onClick={handleReset}
+          >
+            Start Over
+          </button>
+        </div>
       </div>
     );
   }
