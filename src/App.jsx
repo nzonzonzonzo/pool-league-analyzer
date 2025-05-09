@@ -11,18 +11,6 @@ const formatName = (fullName) => {
     `${parts.slice(0, parts.length - 1).join(' ')} ${parts[parts.length - 1][0]}.`;
 };
 
-// Theme state
-const [darkMode, setDarkMode] = useState(() => {
-  const savedTheme = localStorage.getItem('theme');
-  return savedTheme ? savedTheme === 'dark' : true; // Default to dark mode
-});
-
-// Apply theme to document
-useEffect(() => {
-  document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : 'light');
-  localStorage.setItem('theme', darkMode ? 'dark' : 'light');
-}, [darkMode]);
-
 // Toggle theme function
 const toggleDarkMode = () => {
   setDarkMode(prev => !prev);
@@ -939,6 +927,18 @@ function App() {
     game3: { home: null, away: null },
     game4: { home: null, away: null },
   });
+
+  // Theme state
+  const [darkMode, setDarkMode] = useState(() => {
+    const savedTheme = localStorage.getItem('theme');
+    return savedTheme ? savedTheme === 'dark' : true; // Default to dark mode
+  });
+
+  // Apply theme to document
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : 'light');
+    localStorage.setItem('theme', darkMode ? 'dark' : 'light');
+  }, [darkMode]);
 
    // Define DebugPanel component within App
   const DebugPanel = () => {
