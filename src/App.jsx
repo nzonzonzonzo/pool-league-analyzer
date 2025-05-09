@@ -1252,6 +1252,54 @@ const handleOpponentSelection = (gameNum, player) => {
     prev.filter(p => p.name !== opponentCopy.name)
   );
   
+  // CRITICAL: Determine if we should auto-select a home player
+  // Auto-selection ONLY happens when Away is blind in this flow
+  const awayIsBlind = 
+    (wonCoinFlip && (gameNum === 1 || gameNum === 4)) || 
+    (!wonCoinFlip && (gameNum === 2 || gameNum === 3));
+  
+  if (!awayIsBlind) {
+    // For games where Away is NOT blind, we should NOT auto-select
+    // This is for Games 2 and 3 when won coin flip, and Games 1 and 4 when lost coin flip
+    console.log(`Game ${gameNum} - NOT auto-selecting (Away is not blind)`);
+    
+    // Move to next step immediately without auto-selection
+    if (gameNum === 4) {
+      // After game 4 opponent selection, always move to summary
+      console.log("Game 4 completed, moving to summary");
+      setCurrentStep("summary");
+    } else {
+      // Handle next game progression based on coin flip result
+      const nextGameNum = gameNum + 1;
+      
+      if (wonCoinFlip) {
+        // WON COIN FLIP PROGRESSION
+        if (gameNum === 2) {
+          // After game 2 opponent selection (Home was blind), move to game 3 home selection (Home blind)
+          setCurrentStep(`game-${nextGameNum}`);
+        } else if (gameNum === 3) {
+          // After game 3 opponent selection (Home was blind), move to game 4 opponent selection (Away blind)
+          setCurrentStep(`game-${nextGameNum}-opponent`);
+        }
+      } else {
+        // LOST COIN FLIP PROGRESSION
+        if (gameNum === 1) {
+          // After game 1 opponent selection (Home was blind), move to game 2 opponent selection (Away blind)
+          setCurrentStep(`game-${nextGameNum}-opponent`);
+        } else if (gameNum === 4) {
+          // This case shouldn't happen but just in case
+          setCurrentStep("summary");
+        }
+      }
+    }
+    
+    // Clear calculation state and processing flag
+    setIsCalculating(false);
+    processingSelectionRef.current = null;
+    return;
+  }
+  
+  // If we get here, it means we SHOULD auto-select a home player
   // Use a longer timeout to ensure state updates complete
   setTimeout(() => {
     try {
@@ -1260,7 +1308,7 @@ const handleOpponentSelection = (gameNum, player) => {
       const remainingAwayPlayers = [...availableAwayPlayers];
       const currentPlayerSelections = {...selectedPlayers};
       
-      console.log("Finding best response player");
+      console.log("Finding best response player for auto-selection");
       const bestPlayer = findBestResponsePlayer(
         gameNum,
         opponentCopy,
@@ -1279,53 +1327,37 @@ const handleOpponentSelection = (gameNum, player) => {
         return;
       }
       
-      console.log(`Found best player: ${bestPlayer.name}`);
+      console.log(`Found best player for auto-selection: ${bestPlayer.name}`);
       const bestPlayerCopy = JSON.parse(JSON.stringify(bestPlayer));
       
-      // CRITICAL UPDATE: Only set lastAutoSelectedPlayer for games that SHOULD have auto-selection
-      // Auto-selection ONLY happens when Away is blind in this flow
-      const awayIsBlind = 
-        (wonCoinFlip && (gameNum === 1 || gameNum === 4)) || 
-        (!wonCoinFlip && (gameNum === 2 || gameNum === 3));
+      // Set lastAutoSelectedPlayer for auto-selection scenarios
+      setLastAutoSelectedPlayer({
+        gameNumber: gameNum,
+        player: bestPlayerCopy,
+        opponent: opponentCopy,
+        winProbability: calculateWinProbability(
+          bestPlayerCopy.name,
+          opponentCopy.name,
+          teamStats,
+          allMatches
+        )
+      });
       
-      if (awayIsBlind) {
-        // For these games, opponent selection is for a blind (Away) player
-        // So we DO auto-select the Home player
-        console.log(`Game ${gameNum} - Auto-selecting Home player against Away blind`);
-        
-        setLastAutoSelectedPlayer({
-          gameNumber: gameNum,
-          player: bestPlayerCopy,
-          opponent: opponentCopy,
-          winProbability: calculateWinProbability(
-            bestPlayerCopy.name,
-            opponentCopy.name,
-            teamStats,
-            allMatches
-          )
-        });
-        
-        // Update player selection - we're auto-selecting here
-        setAvailableHomePlayers(prev => 
-          prev.filter(p => p.name !== bestPlayerCopy.name)
-        );
-        
-        setSelectedPlayers(prev => {
-          const result = {...prev};
-          if (!result[game]) result[game] = { away: opponentCopy };
-          result[game].home = bestPlayerCopy;
-          return result;
-        });
-      } else {
-        // For games where Away is NOT blind, we should NOT auto-select
-        // This is for Games 2 and 3 when won coin flip, and Games 1 and 4 when lost coin flip
-        console.log(`Game ${gameNum} - NOT auto-selecting (Away is not blind)`);
-        // Do NOT modify selectedPlayers or availableHomePlayers here!
-      }
+      // Update player selection - we're auto-selecting here
+      setAvailableHomePlayers(prev => 
+        prev.filter(p => p.name !== bestPlayerCopy.name)
+      );
+      
+      setSelectedPlayers(prev => {
+        const result = {...prev};
+        if (!result[game]) result[game] = { away: opponentCopy };
+        result[game].home = bestPlayerCopy;
+        return result;
+      });
       
       // Wait to ensure state updates complete
       setTimeout(() => {
-        // CORRECTED: Game progression logic
+        // Game progression logic after auto-selection
         if (gameNum === 4) {
           // After game 4 opponent selection, always move to summary
           console.log("Game 4 completed, moving to summary");
@@ -1339,19 +1371,13 @@ const handleOpponentSelection = (gameNum, player) => {
             if (gameNum === 1) {
               // After game 1 opponent (Away blind) selection, move to game 2 home selection (Home blind)
               setCurrentStep(`game-${nextGameNum}`);
-            } else if (gameNum === 2) {
-              // After game 2 opponent selection (Home was blind), move to game 3 home selection (Home blind)
-              setCurrentStep(`game-${nextGameNum}`);
-            } else if (gameNum === 3) {
-              // After game 3 opponent selection (Home was blind), move to game 4 opponent selection (Away blind)
-              setCurrentStep(`game-${nextGameNum}-opponent`);
+            } else if (gameNum === 4) {
+              // This case shouldn't happen but just in case
+              setCurrentStep("summary");
             }
           } else {
             // LOST COIN FLIP PROGRESSION
-            if (gameNum === 1) {
-              // After game 1 opponent selection (Home was blind), move to game 2 opponent selection (Away blind)
-              setCurrentStep(`game-${nextGameNum}-opponent`);
-            } else if (gameNum === 2) {
+            if (gameNum === 2) {
               // After game 2 opponent selection (Away blind), move to game 3 opponent selection (Away blind)
               setCurrentStep(`game-${nextGameNum}-opponent`);
             } else if (gameNum === 3) {
@@ -1665,21 +1691,29 @@ const renderGameSelection = useCallback((gameNum) => {
   console.log(`Rendering Game ${gameNum} selection screen`);
   
   const game = `game${gameNum}`;
+  
+  // This determines if we select blind (home) or the opponent selects blind (away)
   const weSelectBlind = 
     (wonCoinFlip && (gameNum === 2 || gameNum === 3)) || 
     (!wonCoinFlip && (gameNum === 1 || gameNum === 4));
-
-  // FIXED: Only show auto-selection messages for games where auto-selection happened
-  // Auto-selection happens when Away is blind, which is in Games 1 and 4 for won coin flip
-  // and Games 2 and 3 for lost coin flip
+  
+  // This determines when to show the auto-selection notice
+  // Only show auto-selection notices when:
+  // 1. We have a lastAutoSelectedPlayer
+  // 2. It's from the previous game
+  // 3. It was a game where auto-selection should have happened (Away blind)
   const showLastSelection = lastAutoSelectedPlayer && 
-                           lastAutoSelectedPlayer.gameNumber === gameNum - 1 &&
-                           // Only show for games where auto-selection actually happened
-                           ((wonCoinFlip && (lastAutoSelectedPlayer.gameNumber === 1 || lastAutoSelectedPlayer.gameNumber === 4)) ||
-                            (!wonCoinFlip && (lastAutoSelectedPlayer.gameNumber === 2 || lastAutoSelectedPlayer.gameNumber === 3)));
-
+                          lastAutoSelectedPlayer.gameNumber === gameNum - 1 &&
+                          // Only show for games where auto-selection should have happened
+                          ((wonCoinFlip && (lastAutoSelectedPlayer.gameNumber === 1 || lastAutoSelectedPlayer.gameNumber === 4)) ||
+                           (!wonCoinFlip && (lastAutoSelectedPlayer.gameNumber === 2 || lastAutoSelectedPlayer.gameNumber === 3)));
+  
+  console.log(`Game ${gameNum} - weSelectBlind:`, weSelectBlind);
+  console.log(`Game ${gameNum} - showLastSelection:`, showLastSelection);
+  console.log(`Game ${gameNum} - lastAutoSelectedPlayer:`, lastAutoSelectedPlayer);
+  
   if (weSelectBlind) {
-    // We put up blind
+    // We put up blind (Home selects)
     return (
       <div className="container mx-auto p-4">
         <FloatingInfoButton onClick={() => setShowInfoPopup(true)} />
@@ -1780,10 +1814,10 @@ const renderGameSelection = useCallback((gameNum) => {
             Start Over
           </button>
         </div>
-       </div>
+      </div>
     );
   } else {
-    // Opponent puts up blind, we respond
+    // Opponent puts up blind (Away selects)
     return (
       <div className="container mx-auto p-4">
         <FloatingInfoButton onClick={() => setShowInfoPopup(true)} />
@@ -1845,8 +1879,7 @@ const renderGameSelection = useCallback((gameNum) => {
       </div>
     );
   }
-}
-, [wonCoinFlip, lastAutoSelectedPlayer, availableHomePlayers, availableAwayPlayers, 
+}, [wonCoinFlip, lastAutoSelectedPlayer, availableHomePlayers, availableAwayPlayers, 
     teamStats, allMatches, optimalPlayer, isCalculating, showInfoPopup, handleReset]);
 
   const renderContent = useMemo(() => {
