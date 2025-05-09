@@ -1698,32 +1698,33 @@ const renderGameSelection = useCallback((gameNum) => {
   
   const game = `game${gameNum}`;
   
-  // FIXED: Simplified logic to determine if we or opponent selects
-  const weSelectBlind = 
+  // FIXED LOGIC: Determine who selects blind based on coin flip and game number
+  // For WON coin flip: Home blind for Games 2, 3; Away blind for Games 1, 4
+  // For LOST coin flip: Home blind for Games 1, 4; Away blind for Games 2, 3
+  const homeSelectsBlind = 
     (wonCoinFlip && (gameNum === 2 || gameNum === 3)) || 
     (!wonCoinFlip && (gameNum === 1 || gameNum === 4));
   
-  // FIXED: Show auto-selection notification only if we have a previous auto-selection
-  const wasAutoSelectionGamePrevious = 
-  (wonCoinFlip && (gameNum - 1 === 1 || gameNum - 1 === 4)) || 
-  (!wonCoinFlip && (gameNum - 1 === 2 || gameNum - 1 === 3));
-
-  const showLastSelection = lastAutoSelectedPlayer && 
-                          lastAutoSelectedPlayer.gameNumber === gameNum - 1 && 
-                          wasAutoSelectionGamePrevious;
-
-  // Add these debug logs right after defining showLastSelection:
+  const awaySelectsBlind = !homeSelectsBlind;
+  
+  // Check for auto-selection notification
+  const showAutoSelected = lastAutoSelectedPlayer && 
+                          lastAutoSelectedPlayer.gameNumber === gameNum - 1;
+  
+  // Debug logs
+  console.log(`[renderGameSelection] Game ${gameNum} - Coin flip:`, wonCoinFlip ? "WON" : "LOST");
+  console.log(`[renderGameSelection] Game ${gameNum} - Home selects blind:`, homeSelectsBlind);
+  console.log(`[renderGameSelection] Game ${gameNum} - Away selects blind:`, awaySelectsBlind);
   console.log(`[renderGameSelection] Game ${gameNum} - lastAutoSelectedPlayer:`, 
               lastAutoSelectedPlayer ? {
                 gameNumber: lastAutoSelectedPlayer.gameNumber,
                 player: lastAutoSelectedPlayer.player?.displayName,
                 opponent: lastAutoSelectedPlayer.opponent?.displayName
               } : null);
-  console.log(`[renderGameSelection] Game ${gameNum} - wasAutoSelectionGamePrevious:`, wasAutoSelectionGamePrevious);
-  console.log(`[renderGameSelection] Game ${gameNum} - showLastSelection:`, showLastSelection);
+  console.log(`[renderGameSelection] Game ${gameNum} - showAutoSelected:`, showAutoSelected);
   
-  if (weSelectBlind) {
-    // We put up blind (Home selects)
+  if (homeSelectsBlind) {
+    // HOME SELECTS BLIND - we need to show home player selection UI
     return (
       <div className="container mx-auto p-4">
         <FloatingInfoButton onClick={() => setShowInfoPopup(true)} />
@@ -1731,12 +1732,12 @@ const renderGameSelection = useCallback((gameNum) => {
         <h1 className="text-3xl font-bold mb-6 text-center">
           Pool Team Stats Analyzer
         </h1>
-
-        {/* Show last auto-selected player notification if available */}
-        {showLastSelection && (
+        
+        {/* Show auto-selected player notification if available */}
+        {showAutoSelected && (
           <div className="bg-green-50 p-4 rounded-lg mb-4 border border-green-300">
             <h3 className="font-medium text-green-800 mb-2">
-              Auto-Selected Player for Previous Game
+              Auto-Selected Player for Game {lastAutoSelectedPlayer.gameNumber}
             </h3>
             <p>
               <span className="font-semibold">{lastAutoSelectedPlayer.player.displayName}</span> was 
@@ -1827,7 +1828,7 @@ const renderGameSelection = useCallback((gameNum) => {
       </div>
     );
   } else {
-    // Opponent puts up blind (Away selects)
+    // AWAY SELECTS BLIND - we need to show away player selection UI
     return (
       <div className="container mx-auto p-4">
         <FloatingInfoButton onClick={() => setShowInfoPopup(true)} />
@@ -1836,11 +1837,11 @@ const renderGameSelection = useCallback((gameNum) => {
           Pool Team Stats Analyzer
         </h1>
 
-        {/* Show last auto-selected player notification if available */}
-        {showLastSelection && (
+        {/* Show auto-selected player notification if available */}
+        {showAutoSelected && (
           <div className="bg-green-50 p-4 rounded-lg mb-4 border border-green-300">
             <h3 className="font-medium text-green-800 mb-2">
-              Auto-Selected Player for Previous Game
+              Auto-Selected Player for Game {lastAutoSelectedPlayer.gameNumber}
             </h3>
             <p>
               <span className="font-semibold">{lastAutoSelectedPlayer.player.displayName}</span> was 
