@@ -1121,6 +1121,7 @@ const selectPlayerForGame = (game, team, player) => {
       prev.filter(p => p.name !== selectedPlayer.name)
     );
   }
+
   
   // Update selected players state
   setSelectedPlayers(prev => {
@@ -1136,10 +1137,6 @@ const selectPlayerForGame = (game, team, player) => {
   });
   
 // Navigate after state updates
-setTimeout(() => {
-  let nextStep;
-  
-  // Navigate after state updates
 setTimeout(() => {
   let nextStep;
   
@@ -1178,6 +1175,7 @@ setTimeout(() => {
     }
   }, 500);
 }, 300);
+
 
 // Step 1: Team selection
 const handleTeamSelection = () => {
