@@ -5,7 +5,7 @@ const ThemeToggle = ({ darkMode, toggleDarkMode }) => {
   return (
     <button
       onClick={toggleDarkMode}
-      className="fixed top-2 left-4 z-40 p-0 bg-transparent transition-colors duration-200"
+      className="fixed top-3 left-6 z-40 p-0 bg-transparent transition-colors duration-200"
       aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
     >
       {darkMode ? (
