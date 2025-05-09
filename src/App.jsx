@@ -11,6 +11,29 @@ const formatName = (fullName) => {
     `${parts.slice(0, parts.length - 1).join(' ')} ${parts[parts.length - 1][0]}.`;
 };
 
+// Add these constants outside your App function
+const getInitialTheme = () => {
+  try {
+    const savedTheme = localStorage.getItem('theme');
+    return savedTheme ? savedTheme === 'dark' : true; // Default to dark
+  } catch {
+    return true; // Fallback to dark mode
+  }
+};
+
+// Apply theme to document (utility function)
+const applyTheme = (isDark) => {
+  document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+  try {
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+  } catch (e) {
+    console.error("Could not save theme preference:", e);
+  }
+};
+
+// Initialize theme on page load (outside App function)
+applyTheme(getInitialTheme());
+
 // SVG Icon Components
 const LightbulbIcon = () => (
   <svg
@@ -933,7 +956,7 @@ function App() {
   
   // Simple toggle function
   const toggleDarkMode = () => setDarkMode(!darkMode);
-  
+
   // UI state
   const [showInfoPopup, setShowInfoPopup] = useState(false);
   const [isCalculating, setIsCalculating] = useState(false);
