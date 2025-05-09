@@ -23,7 +23,7 @@ const ThemeToggle = ({ darkMode, toggleDarkMode }) => {
         </svg>
       ) : (
         // Moon icon for light mode (click to go to dark)
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#bdc1c6" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="text-neutral-800">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#bdc1c6" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="text-neutral-800">
           <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
         </svg>
       )}
