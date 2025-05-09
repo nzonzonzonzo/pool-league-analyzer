@@ -42,7 +42,7 @@ const LightbulbIcon = () => (
     height="18"
     viewBox="0 0 24 24"
     fill="none"
-    stroke="neutral-800"
+    stroke="neutral-50"
     strokeWidth="1"
     strokeLinecap="round"
     strokeLinejoin="round"
@@ -60,7 +60,7 @@ const CloseIcon = () => (
     height="18"
     viewBox="0 0 24 24"
     fill="none"
-    stroke="neutral-800"
+    stroke="neutral-50"
     strokeWidth="1"
     strokeLinecap="round"
     strokeLinejoin="round"
@@ -81,7 +81,7 @@ const FloatingInfoButton = ({ onClick }) => (
   </button>
 );
 
-const InfoPopup = ({ isOpen, onClose, darkMode, toggleDarkMode }) => {
+const InfoPopup = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
@@ -89,45 +89,9 @@ const InfoPopup = ({ isOpen, onClose, darkMode, toggleDarkMode }) => {
       <div className="bg-gray-800 p-6 rounded-lg max-w-3xl max-h-[80vh] overflow-y-auto m-4" onClick={(e) => e.stopPropagation()}>
         <div className="flex justify-between items-start mb-4">
           <h2 className="text-xl font-semibold text-white">How Win Probabilities and Optimal Matchups Are Calculated</h2>
-          <div className="flex items-center">
-            {/* Theme toggle button */}
-            <div className="mr-4 flex items-center">
-              <span className="text-neutral-400 text-sm mr-2">Theme:</span>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  toggleDarkMode();
-                }}
-                className="p-2 rounded-full bg-neutral-200 dark:bg-neutral-700 hover:bg-neutral-300 dark:hover:bg-neutral-600 transition-colors duration-200"
-                aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
-              >
-                {darkMode ? (
-                  // Sun icon for dark mode (click to go to light)
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-neutral-100">
-                    <circle cx="12" cy="12" r="5"></circle>
-                    <line x1="12" y1="1" x2="12" y2="3"></line>
-                    <line x1="12" y1="21" x2="12" y2="23"></line>
-                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-                    <line x1="1" y1="12" x2="3" y2="12"></line>
-                    <line x1="21" y1="12" x2="23" y2="12"></line>
-                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-                  </svg>
-                ) : (
-                  // Moon icon for light mode (click to go to dark)
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-neutral-800">
-                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-                  </svg>
-                )}
-              </button>
-            </div>
-            
-            {/* Close button */}
-            <button className="bg-transparent hover:opacity-80 transition-opacity duration-200" onClick={onClose}>
-              <CloseIcon />
-            </button>
-          </div>
+          <button className="bg-transparent hover:opacity-80 transition-opacity duration-200" onClick={onClose}>
+            <CloseIcon />
+          </button>
         </div>
         
         <p className="mb-4 text-gray-300">The Pool Team Stats Analyzer uses advanced algorithms to both calculate individual matchup probabilities and determine the optimal overall lineup strategy.</p>
