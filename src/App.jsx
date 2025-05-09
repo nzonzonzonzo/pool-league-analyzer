@@ -1211,6 +1211,7 @@ const chooseDifferentPlayer = (gameNum) => {
 // FIXED: Handle opponent selection and find best response
 const handleOpponentSelection = (gameNum, player) => {
   console.log(`[handleOpponentSelection] GameNum: ${gameNum}, Player: ${player?.name}`);
+  console.log(`[handleOpponentSelection] Current coin flip: ${wonCoinFlip ? "WON" : "LOST"}`);
   
   if (!player || !player.name) {
     console.error("Invalid player object in handleOpponentSelection");
@@ -1246,7 +1247,9 @@ const handleOpponentSelection = (gameNum, player) => {
     prev.filter(p => p.name !== opponentCopy.name)
   );
   
-  // FIXED: Determine if we should auto-select a home player for this game
+  // FIXED: More precise logic to determine if we should auto-select for this game
+  // For WON coin flip: Auto-select in Games 1 and 4 (Away blind)
+  // For LOST coin flip: Auto-select in Games 2 and 3 (Away blind)
   const shouldAutoSelect = 
     (wonCoinFlip && (gameNum === 1 || gameNum === 4)) || 
     (!wonCoinFlip && (gameNum === 2 || gameNum === 3));
@@ -1255,6 +1258,9 @@ const handleOpponentSelection = (gameNum, player) => {
   
   // Set a short timeout to ensure the opponent is saved first
   setTimeout(async () => {
+    let nextStep;
+    let bestPlayerCopy = null;
+    
     try {
       if (shouldAutoSelect) {
         // For games where we auto-select
@@ -1266,6 +1272,8 @@ const handleOpponentSelection = (gameNum, player) => {
         const currentPlayerSelections = {...selectedPlayers};
         
         console.log("Finding best response player");
+        console.log("Available home players:", currentHomePlayers.map(p => p.name));
+        
         const bestPlayer = findBestResponsePlayer(
           gameNum,
           opponentCopy,
@@ -1285,9 +1293,9 @@ const handleOpponentSelection = (gameNum, player) => {
         }
         
         console.log(`Found best player: ${bestPlayer.name}`);
-        const bestPlayerCopy = JSON.parse(JSON.stringify(bestPlayer));
+        bestPlayerCopy = JSON.parse(JSON.stringify(bestPlayer));
         
-        // Set lastAutoSelectedPlayer
+        // Set lastAutoSelectedPlayer ONLY if we actually found a player
         setLastAutoSelectedPlayer({
           gameNumber: gameNum,
           player: bestPlayerCopy,
@@ -1316,46 +1324,45 @@ const handleOpponentSelection = (gameNum, player) => {
       }
       
       // FIXED: Navigate to next step based on won/lost coin flip
-      setTimeout(() => {
-        let nextStep;
-        
-        if (gameNum === 4) {
-          // Always go to summary after Game 4
-          nextStep = "summary";
+      if (gameNum === 4) {
+        // Always go to summary after Game 4
+        nextStep = "summary";
+      } else {
+        // Determine next step based on coin flip and current game
+        if (wonCoinFlip) {
+          // WON COIN FLIP FLOW
+          if (gameNum === 1) {
+            // After G1 opponent, go to G2 home selection
+            nextStep = "game-2";
+          } else if (gameNum === 2) {
+            // After G2 opponent, go to G3 home selection
+            nextStep = "game-3";
+          } else if (gameNum === 3) {
+            // After G3 opponent, go to G4 opponent selection
+            nextStep = "game-4-opponent";
+          }
         } else {
-          // Determine next step based on coin flip and current game
-          if (wonCoinFlip) {
-            // WON COIN FLIP FLOW
-            if (gameNum === 1) {
-              // After G1 opponent, go to G2 home selection
-              nextStep = "game-2";
-            } else if (gameNum === 2) {
-              // After G2 opponent, go to G3 home selection
-              nextStep = "game-3";
-            } else if (gameNum === 3) {
-              // After G3 opponent, go to G4 opponent selection
-              nextStep = "game-4-opponent";
-            }
-          } else {
-            // LOST COIN FLIP FLOW
-            if (gameNum === 1) {
-              // After G1 opponent, go to G2 opponent selection
-              nextStep = "game-2-opponent";
-            } else if (gameNum === 2) {
-              // After G2 opponent, go to G3 opponent selection
-              nextStep = "game-3-opponent";
-            } else if (gameNum === 3) {
-              // After G3 opponent, go to G4 home selection
-              nextStep = "game-4";
-            }
+          // LOST COIN FLIP FLOW
+          if (gameNum === 1) {
+            // After G1 opponent, go to G2 opponent selection
+            nextStep = "game-2-opponent";
+          } else if (gameNum === 2) {
+            // After G2 opponent, go to G3 opponent selection
+            nextStep = "game-3-opponent";
+          } else if (gameNum === 3) {
+            // After G3 opponent, go to G4 home selection
+            nextStep = "game-4";
           }
         }
-        
-        console.log(`[handleOpponentSelection] Navigating to: ${nextStep}`);
+      }
+      
+      console.log(`[handleOpponentSelection] Navigating to: ${nextStep}`);
+      console.log(`[handleOpponentSelection] Auto-selected player:`, bestPlayerCopy?.name || "None");
+      
+      // Give time for state updates to complete
+      setTimeout(() => {
         setCurrentStep(nextStep);
         setIsCalculating(false);
-        
-        // Clear the processing flag
         processingSelectionRef.current = null;
       }, 500);
       
@@ -1652,8 +1659,9 @@ const renderBestPlayerConfirmation = (gameNum) => {
   };
 
   // Render Game 2, 3, 4 selection with similar pattern
-const renderGameSelection = useCallback((gameNum) => {
+onst renderGameSelection = useCallback((gameNum) => {
   console.log(`[renderGameSelection] Game ${gameNum}`);
+  console.log(`[renderGameSelection] Current coin flip: ${wonCoinFlip ? "WON" : "LOST"}`);
   
   const game = `game${gameNum}`;
   
@@ -1662,12 +1670,21 @@ const renderGameSelection = useCallback((gameNum) => {
     (wonCoinFlip && (gameNum === 2 || gameNum === 3)) || 
     (!wonCoinFlip && (gameNum === 1 || gameNum === 4));
   
-  // FIXED: Show auto-selection notification only if we have a previous auto-selection
+  // FIXED: Better logic for showing auto-selection
+  // 1. Check if lastAutoSelectedPlayer exists
+  // 2. Check if it's from the previous game
+  // 3. Make sure we're only showing it for games where auto-selection could have happened
+  const autoSelectionShouldHaveHappenedInPreviousGame = 
+    (wonCoinFlip && (gameNum - 1 === 1 || gameNum - 1 === 4)) || 
+    (!wonCoinFlip && (gameNum - 1 === 2 || gameNum - 1 === 3));
+  
   const showLastSelection = lastAutoSelectedPlayer && 
-                          lastAutoSelectedPlayer.gameNumber === gameNum - 1;
+                          lastAutoSelectedPlayer.gameNumber === gameNum - 1 &&
+                          autoSelectionShouldHaveHappenedInPreviousGame;
   
   console.log(`[renderGameSelection] weSelectBlind:`, weSelectBlind);
   console.log(`[renderGameSelection] lastAutoSelectedPlayer:`, lastAutoSelectedPlayer);
+  console.log(`[renderGameSelection] autoSelectionShouldHaveHappenedInPreviousGame:`, autoSelectionShouldHaveHappenedInPreviousGame);
   console.log(`[renderGameSelection] showLastSelection:`, showLastSelection);
   
   if (weSelectBlind) {
@@ -1775,7 +1792,7 @@ const renderGameSelection = useCallback((gameNum) => {
       </div>
     );
   } else {
-    // Opponent puts up blind (Away selects)
+        // Opponent puts up blind (Away selects)
     return (
       <div className="container mx-auto p-4">
         <FloatingInfoButton onClick={() => setShowInfoPopup(true)} />
@@ -1834,7 +1851,7 @@ const renderGameSelection = useCallback((gameNum) => {
             Start Over
           </button>
         </div>
-      </div>
+     </div>
     );
   }
 }, [wonCoinFlip, lastAutoSelectedPlayer, availableHomePlayers, availableAwayPlayers, 
