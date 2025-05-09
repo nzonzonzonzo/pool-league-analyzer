@@ -1660,12 +1660,12 @@ const renderBestPlayerConfirmation = (gameNum) => {
   };
 
   // Helper function to render the opponent selection screen
-  const renderOpponentSelectionScreen = (gameNumber) => {
-    const game = `game${gameNumber}`;
-    
-    // Add this to get auto-selection notification data
+const renderOpponentSelectionScreen = (gameNumber) => {
+  const game = `game${gameNumber}`;
+  
+  // Add this to determine if we should show auto-selection notification
   const showLastAutoSelection = lastAutoSelectedPlayer && 
-                              lastAutoSelectedPlayer.gameNumber === gameNumber - 1;
+                             lastAutoSelectedPlayer.gameNumber === gameNumber - 1;
   
   return (
     <div className="container mx-auto p-4">
@@ -1674,8 +1674,8 @@ const renderBestPlayerConfirmation = (gameNum) => {
       <h1 className="text-3xl font-bold mb-6 text-center">
         Pool Team Stats Analyzer
       </h1>
-
-      {/* Show auto-selection notification if applicable */}
+      
+      {/* Add auto-selection notification here */}
       {showLastAutoSelection && (
         <div className="bg-green-50 p-4 rounded-lg mb-4 border border-green-300">
           <h3 className="font-medium text-green-800 mb-2">
@@ -1688,24 +1688,55 @@ const renderBestPlayerConfirmation = (gameNum) => {
           </p>
         </div>
       )}
-
+      
       <div className="bg-blue-50 p-6 rounded-lg mb-8">
         <h2 className="text-xl font-semibold mb-4">Game {gameNumber} Opponent Selection</h2>
-        
-        {/* FIXED TEXT: Use correct messaging */}
+        {/* Updated text that checks if we have a home player */}
         <p className="mb-4">
-          {/* Only show this if we have a home player selected, otherwise show the default message */}
           {selectedPlayers[game]?.home ? 
             `You've selected ${selectedPlayers[game].home.displayName} for Game ${gameNumber}. Which player did the opponent choose?` :
             `The opponent selects a player for Game ${gameNumber}. Which player did they choose?`
           }
         </p>
-
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {/* Rest of your existing code */}
+          {availableAwayPlayers.map((player) => {
+            // Calculate win probability against our player
+            const winProb = calculateWinProbability(
+              selectedPlayers[game].home?.name,
+              player.name,
+              teamStats,
+              allMatches
+            );
+            
+            return (
+              <div
+                key={`opponent-player-${player.name}`}
+                className="p-4 border rounded-lg cursor-pointer hover:bg-blue-100"
+                onClick={() => handleOpponentSelection(gameNumber, player)}
+              >
+                <div className="font-medium">{player.displayName}</div>
+                <div className="text-sm text-gray-600">
+                  HCP: {player.handicap}
+                </div>
+                <div className="mt-2">
+                  <div className="text-sm">Win probability against them:</div>
+                  <div className="flex items-center mt-1">
+                    <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden mr-2">
+                      <div
+                        className="h-full bg-green-500"
+                        style={{ width: `${winProb * 100}%` }}
+                      ></div>
+                    </div>
+                    <span className="font-medium">
+                      {Math.round(winProb * 100)}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
-
       <div className="flex justify-center">
         <button
           className="px-4 py-2 bg-gray-300 text-gray-800 rounded"
