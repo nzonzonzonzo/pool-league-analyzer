@@ -1,10 +1,21 @@
-/* Pool Team Stats Analyzer - Dark Theme CSS */
+/* Pool Team Stats Analyzer - CSS with Theme Support */
 
 /* Import Google Fonts: Domine for headers and Rubik for body text */
 @import url('https://fonts.googleapis.com/css2?family=Domine:wght@400;500;600;700&family=Rubik:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap');
 
-/* Updated CSS variables to match the Google Fonts dark theme */
+/* Base variables and smooth transitions for theme switching */
 :root {
+  /* Common transitions and other shared properties */
+  --transition-speed: 0.2s;
+}
+
+/* Add smooth transitions for theme switching */
+* {
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Dark theme variables (default) */
+:root:not([data-theme="light"]), :root[data-theme="dark"] {
   /* Primary colors */
   --primary: #8ab4f8;          /* Light blue for primary elements */
   --primary-light: #aecbfa;    /* Lighter blue for hover states */
@@ -42,7 +53,46 @@
   --filter-text: #aecbfa;      /* Text color for filter pills */
 }
 
-/* Base styles for dark theme */
+/* Light theme variables */
+:root[data-theme="light"] {
+  /* Primary colors */
+  --primary: #1a73e8;          /* Blue for primary elements */
+  --primary-light: #4285f4;    /* Lighter blue for hover states */
+  --primary-dark: #0b57d0;     /* Darker blue for active states */
+
+  /* Secondary colors */
+  --secondary: #34a853;        /* Green for success states */
+  --secondary-light: #5cb85c;  /* Light green for hover/backgrounds */
+  --secondary-dark: #2e7d32;   /* Dark green for text/accents */
+
+  /* Neutral colors - light theme */
+  --neutral-50: #ffffff;       /* White for main background */
+  --neutral-100: #f8f9fa;      /* Very light gray for cards */
+  --neutral-200: #e8eaed;      /* Light gray for borders */
+  --neutral-300: #dadce0;      /* Medium-light gray for secondary borders */
+  --neutral-400: #bdc1c6;      /* Medium gray for disabled states */
+  --neutral-500: #9aa0a6;      /* Medium gray for secondary text */
+  --neutral-600: #5f6368;      /* Dark gray for primary text */
+  --neutral-700: #3c4043;      /* Very dark gray for emphasized text */
+  --neutral-800: #202124;      /* Nearly black for headings */
+  --neutral-900: #000000;      /* Black for high-contrast elements */
+
+  /* Semantic colors */
+  --danger: #ea4335;           /* Red for errors */
+  --success: #34a853;          /* Green for success */
+  --warning: #fbbc04;          /* Yellow for warnings */
+  --info: #4285f4;             /* Blue for info */
+
+  /* Background color */
+  --bg-color: #ffffff;         /* Main background color */
+  --card-bg: #f8f9fa;          /* Card background color */
+
+  /* Additional colors for specific elements */
+  --filter-bg: rgba(26, 115, 232, 0.1);  /* Semi-transparent blue for filter pills */
+  --filter-text: #1a73e8;      /* Text color for filter pills */
+}
+
+/* Base styles that use theme variables */
 body {
   font-family: 'Rubik', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
   line-height: 1.5;
@@ -68,10 +118,10 @@ h1, h2, h3, h4, h5, h6 {
   padding: 1.5rem 1rem;
 }
 
-/* Card styles for dark theme */
+/* Card styles that use theme variables */
 .border {
   border: 1px solid var(--neutral-200);
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition: border-color var(--transition-speed), box-shadow var(--transition-speed);
 }
 
 .rounded-lg {
@@ -80,14 +130,14 @@ h1, h2, h3, h4, h5, h6 {
 
 .shadow {
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3);
-  transition: box-shadow 0.2s;
+  transition: box-shadow var(--transition-speed);
 }
 
 .shadow:hover {
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
 }
 
-/* Make all cards have dark backgrounds */
+/* Make all cards have themed backgrounds */
 .p-4.border, .p-5.border, .p-6.border, .bg-blue-50 {
   background-color: var(--card-bg);
 }
@@ -102,7 +152,7 @@ button {
   font-weight: 500;
   font-size: 0.875rem;
   letter-spacing: 0.025em;
-  transition: background-color 0.2s, transform 0.1s;
+  transition: background-color var(--transition-speed), transform 0.1s;
 }
 
 button:active {
@@ -157,7 +207,8 @@ button:disabled {
 }
 
 .bg-red-600:hover {
-  background-color: #ff9d96;
+  background-color: var(--danger);
+  opacity: 0.9;
 }
 
 /* Form controls */
@@ -170,7 +221,7 @@ select, input {
   color: var(--neutral-800);
   font-family: 'Rubik', sans-serif;
   font-size: 0.875rem;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition: border-color var(--transition-speed), box-shadow var(--transition-speed);
 }
 
 select:focus, input:focus {
@@ -201,12 +252,12 @@ select:focus, input:focus {
 }
 
 .hover\:bg-blue-100:hover {
-  background-color: rgba(174, 203, 250, 0.1);
+  background-color: rgba(var(--primary), 0.1);
 }
 
 /* Player card enhancements */
 div[class*="cursor-pointer"] {
-  transition: transform 0.2s, box-shadow 0.2s, background-color 0.2s;
+  transition: transform var(--transition-speed), box-shadow var(--transition-speed), background-color var(--transition-speed);
 }
 
 div[class*="cursor-pointer"]:hover {
@@ -224,7 +275,7 @@ div[class*="cursor-pointer"]:hover {
   transition: width 0.5s ease-out;
 }
 
-/* Table styles for dark theme */
+/* Table styles with theme variables */
 table {
   border-collapse: separate;
   border-spacing: 0;
@@ -289,12 +340,36 @@ tr:hover td {
   }
 }
 
-/* CSS Variable Usage in Class Names */
+/* Dark/Light Theme specific classes */
+:root[data-theme="light"] .dark\:bg-neutral-700 {
+  background-color: var(--neutral-200);
+}
 
+:root[data-theme="light"] .dark\:hover\:bg-neutral-600:hover {
+  background-color: var(--neutral-300);
+}
+
+:root[data-theme="light"] .dark\:bg-neutral-50 {
+  background-color: var(--neutral-800);
+}
+
+:root[data-theme="dark"] .light\:bg-neutral-200 {
+  background-color: var(--neutral-700);
+}
+
+:root[data-theme="dark"] .light\:hover\:bg-neutral-300:hover {
+  background-color: var(--neutral-600);
+}
+
+:root[data-theme="dark"] .light\:text-neutral-800 {
+  color: var(--neutral-50);
+}
+
+/* CSS Variable Usage in Class Names */
 .inset-0 { top: 0; right: 0; bottom: 0; left: 0; }
 .bg-opacity-50 { --tw-bg-opacity: 0.5; }
 .z-50 { z-index: 50; }
-.bg-gray-800 { background-color: #1a1a1a; } /* Adjusted for your dark theme */
+.bg-gray-800 { background-color: var(--neutral-50); } /* Adjusted for theming */
 .max-w-3xl { max-width: 48rem; }
 .max-h-\[80vh\] { max-height: 80vh; }
 .m-4 { margin: 1rem; }
@@ -306,8 +381,8 @@ tr:hover td {
 .p-0 { padding: 0; }
 .bg-transparent { background-color: transparent; }
 .hover\:opacity-80:hover { opacity: 0.8; }
-.transition-opacity { transition: opacity 0.2s; }
-.duration-200 { transition-duration: 0.2s; }
+.transition-opacity { transition: opacity var(--transition-speed); }
+.duration-200 { transition-duration: var(--transition-speed); }
 
 .text-primary { color: var(--primary); }
 .text-primary-dark { color: var(--primary-dark); }
@@ -364,9 +439,9 @@ tr:hover td {
 .to-blue-100 { --to-color: rgba(138, 180, 248, 0.1); }
 
 /* Transitions */
-.transition-all { transition: all 0.2s; }
-.transition-colors { transition: background-color 0.2s, border-color 0.2s, color 0.2s; }
-.transition-shadow { transition: box-shadow 0.2s; }
+.transition-all { transition: all var(--transition-speed); }
+.transition-colors { transition: background-color var(--transition-speed), border-color var(--transition-speed), color var(--transition-speed); }
+.transition-shadow { transition: box-shadow var(--transition-speed); }
 
 /* Hover states */
 .hover\:shadow-md:hover { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2); }
@@ -434,4 +509,37 @@ tr:hover td {
 
 @media (min-width: 1024px) {
   .lg\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+/* Color adjustments for specific cards in light mode */
+:root[data-theme="light"] .bg-blue-50 {
+  background-color: rgba(26, 115, 232, 0.05);
+}
+
+:root[data-theme="light"] .bg-green-50 {
+  background-color: rgba(52, 168, 83, 0.05);
+}
+
+:root[data-theme="light"] .bg-red-50 {
+  background-color: rgba(234, 67, 53, 0.05);
+}
+
+:root[data-theme="light"] .border-green-500 {
+  border-color: var(--secondary);
+}
+
+:root[data-theme="light"] .text-white {
+  color: #ffffff;
+}
+
+:root[data-theme="light"] .text-gray-300 {
+  color: var(--neutral-600);
+}
+
+:root[data-theme="light"] .text-gray-600 {
+  color: var(--neutral-600);
+}
+
+:root[data-theme="light"] .text-gray-800 {
+  color: var(--neutral-800);
 }

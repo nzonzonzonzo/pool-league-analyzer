@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import "./App.css";
+import ThemeToggle from './ThemeToggle'; 
 
 // Name formatting utility - more economical implementation
 const formatName = (fullName) => {
@@ -8,6 +9,23 @@ const formatName = (fullName) => {
   const parts = fullName.split(' ');
   return parts.length <= 1 ? fullName : 
     `${parts.slice(0, parts.length - 1).join(' ')} ${parts[parts.length - 1][0]}.`;
+};
+
+// Theme state
+const [darkMode, setDarkMode] = useState(() => {
+  const savedTheme = localStorage.getItem('theme');
+  return savedTheme ? savedTheme === 'dark' : true; // Default to dark mode
+});
+
+// Apply theme to document
+useEffect(() => {
+  document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : 'light');
+  localStorage.setItem('theme', darkMode ? 'dark' : 'light');
+}, [darkMode]);
+
+// Toggle theme function
+const toggleDarkMode = () => {
+  setDarkMode(prev => !prev);
 };
 
 // SVG Icon Components
@@ -2497,6 +2515,7 @@ if (currentStep === "summary") {
   return (
     <>
       {renderContent}
+      <ThemeToggle darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
       <DebugPanel />
     </>
   );
