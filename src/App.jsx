@@ -133,8 +133,7 @@ function SearchableDropdown({ options, value, onChange, placeholder, minChars = 
 
   // Filter options based on search term - WITH FIXED NULL CHECK
   const filteredOptions = options.filter(option => 
-    option && typeof option === 'string' && 
-    option.toLowerCase().includes((searchTerm || '').toLowerCase())
+    option && option.toLowerCase().includes((searchTerm || '').toLowerCase())
   );
   
   // Reset focused index when filtered options change
