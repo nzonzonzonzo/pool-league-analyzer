@@ -1175,6 +1175,7 @@ setTimeout(() => {
     }
   }, 500);
 }, 300);
+};
 
 
 // Step 1: Team selection
