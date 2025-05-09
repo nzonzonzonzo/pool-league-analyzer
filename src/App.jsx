@@ -282,6 +282,7 @@ function SearchableDropdown({ options, value, onChange, placeholder, minChars = 
   );
 }
 
+
 // Helper function to make a matrix copy
 function makeMatrixCopy(matrix) {
   return matrix.map(row => [...row]);
@@ -538,6 +539,13 @@ function cloneSelections(selections) {
     };
   }
   return clone;
+}
+
+function isHomeSelectingBlind(gameNum, wonCoinFlip) {
+  // For WON coin flip: Home blind for Games 2, 3; Away blind for Games 1, 4
+  // For LOST coin flip: Home blind for Games 1, 4; Away blind for Games 2, 3
+  return (wonCoinFlip && (gameNum === 2 || gameNum === 3)) || 
+         (!wonCoinFlip && (gameNum === 1 || gameNum === 4));
 }
 
 // Helper function to determine if home player selects blind based on game number and coin flip
@@ -1208,9 +1216,21 @@ const confirmBestPlayer = (gameNum) => {
   });
   
   // First navigate to next screen
-  const nextStep = gameNum < 4 ? `game-${gameNum + 1}` : "summary";
-  console.log(`Navigating to: ${nextStep}`);
-  setCurrentStep(nextStep);
+  let nextStep;
+  if (gameNum === 4) {
+    nextStep = "summary";
+  } else {
+    const nextGameNum = gameNum + 1;
+    
+    // Determine if next game is home or away selection based on coin flip
+    const isNextGameHomeSelection = isHomeSelectingBlind(nextGameNum, wonCoinFlip);
+    
+    if (isNextGameHomeSelection) {
+      nextStep = `game-${nextGameNum}`;
+    } else {
+      nextStep = `game-${nextGameNum}-opponent`;
+    }
+  }
   
   // THEN reset the calculated best player after a short delay
   setTimeout(() => {
@@ -1701,10 +1721,7 @@ const renderGameSelection = useCallback((gameNum) => {
   // FIXED LOGIC: Determine who selects blind based on coin flip and game number
   // For WON coin flip: Home blind for Games 2, 3; Away blind for Games 1, 4
   // For LOST coin flip: Home blind for Games 1, 4; Away blind for Games 2, 3
-  const homeSelectsBlind = 
-    (wonCoinFlip && (gameNum === 2 || gameNum === 3)) || 
-    (!wonCoinFlip && (gameNum === 1 || gameNum === 4));
-  
+  const homeSelectsBlind = isHomeSelectingBlind(gameNum, wonCoinFlip);
   const awaySelectsBlind = !homeSelectsBlind;
   
   // Check for auto-selection notification
