@@ -950,6 +950,10 @@ function App() {
   // Add this with your other state declarations
 const [lastAutoSelectedPlayer, setLastAutoSelectedPlayer] = useState(null);
 
+useEffect(() => {
+  console.log(`[App] currentStep changed to: ${currentStep}`);
+}, [currentStep]);
+
  // Custom hook to perform multiple state updates before navigation
   const useMultiStateUpdate = () => {
     const [pendingUpdates, setPendingUpdates] = useState([]);
@@ -1756,8 +1760,7 @@ const renderGameSelection = useCallback((gameNum) => {
                 opponent: lastAutoSelectedPlayer.opponent?.displayName
               } : null);
   console.log(`[renderGameSelection] Game ${gameNum} - showAutoSelected:`, showAutoSelected);
-  
-  
+
   if (homeSelectsBlind) {
     // HOME SELECTS BLIND - we need to show home player selection UI
     return (
@@ -1776,7 +1779,7 @@ const renderGameSelection = useCallback((gameNum) => {
             </h3>
             <p>
               <span className="font-semibold">{lastAutoSelectedPlayer.player.displayName}</span> was 
-              automatically chosen as the best match against {lastAutoSelectedPlayer.opponent.displayName} with 
+              automatically chosen for Game {lastAutoSelectedPlayer.gameNumber} as the best match against {lastAutoSelectedPlayer.opponent.displayName} with 
               a {Math.round(lastAutoSelectedPlayer.winProbability * 100)}% win probability.
             </p>
           </div>
