@@ -1135,35 +1135,45 @@ const selectPlayerForGame = (game, team, player) => {
     return updated;
   });
   
-  // Navigate after state updates
-  setTimeout(() => {
-    // FIXED: Simplified navigation logic
-    let nextStep;
-    
-    // Always go to opponent selection after we select a home player
-    if (teamStr === "home") {
-      nextStep = `game-${gameNumber}-opponent`;
-    } 
-    // Almost never happens but if we select an away player, go to next game or summary
-    else {
-      if (gameNumber === 4) {
-        nextStep = "summary";
+// Navigate after state updates
+setTimeout(() => {
+  let nextStep;
+  
+  // Always go to opponent selection after we select a home player
+  if (teamStr === "home") {
+    // Use createOpponentStep for consistency
+    nextStep = `game-${gameNumber}-opponent`;
+  } 
+  // Almost never happens but if we select an away player, go to next game or summary
+  else {
+    if (gameNumber === 4) {
+      nextStep = "summary";
+    } else {
+      const nextGameNum = gameNumber + 1;
+      
+      // Determine if next game should be home or away selection
+      const isNextGameHomeSelection = isHomeSelectingBlind(nextGameNum, wonCoinFlip);
+      
+      if (isNextGameHomeSelection) {
+        // If home selects blind for next game, go to home selection
+        nextStep = `game-${nextGameNum}`;
       } else {
-        nextStep = `game-${gameNumber + 1}`;
+        // If away selects blind for next game, go to away selection
+        nextStep = `game-${nextGameNum}-opponent`;
       }
     }
-    
-    console.log(`[selectPlayerForGame] Navigating to: ${nextStep}`);
-    setCurrentStep(nextStep);
-    
-    // Clear the processing flag
-    setTimeout(() => {
-      if (processingSelectionRef.current === gameStr) {
-        processingSelectionRef.current = null;
-      }
-    }, 500);
-  }, 300);
-};
+  }
+  
+  console.log(`[selectPlayerForGame] Navigating to: ${nextStep}`);
+  setCurrentStep(nextStep);
+  
+  // Clear the processing flag
+  setTimeout(() => {
+    if (processingSelectionRef.current === gameStr) {
+      processingSelectionRef.current = null;
+    }
+  }, 500);
+}, 300);
 
 // Step 1: Team selection
 const handleTeamSelection = () => {
@@ -1247,7 +1257,7 @@ const chooseDifferentPlayer = (gameNum) => {
   
   // Then navigate to manual selection with delay
   setTimeout(() => {
-    const nextStep = `game-${gameNum}-manual-selection`;
+    const nextStep = gameNum < 4 ? `game-${gameNum + 1}` : "summary";
     console.log(`Navigating to manual selection: ${nextStep}`);
     setCurrentStep(nextStep);
   }, 300);
