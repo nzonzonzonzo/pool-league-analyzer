@@ -1251,7 +1251,7 @@ const confirmBestPlayer = (gameNum) => {
   }, 100);
 };
 
-// NEW: Function to choose a different player instead
+// FIXED: Function to choose a different player instead
 const chooseDifferentPlayer = (gameNum) => {
   console.log(`Choosing different player for game ${gameNum}`);
   
@@ -1260,7 +1260,8 @@ const chooseDifferentPlayer = (gameNum) => {
   
   // Then navigate to manual selection with delay
   setTimeout(() => {
-    const nextStep = gameNum < 4 ? `game-${gameNum + 1}` : "summary";
+    // Navigate to manual selection for the CURRENT game, not the next game
+    const nextStep = `game-${gameNum}-manual-selection`;
     console.log(`Navigating to manual selection: ${nextStep}`);
     setCurrentStep(nextStep);
   }, 300);
@@ -1739,7 +1740,10 @@ const renderGameSelection = useCallback((gameNum) => {
   
   // Check for auto-selection notification
   const showAutoSelected = lastAutoSelectedPlayer && 
-                          lastAutoSelectedPlayer.gameNumber === gameNum - 1;
+                        lastAutoSelectedPlayer.gameNumber === gameNum - 1 &&
+                        // Only show auto-selection message if it actually happened
+                        ((wonCoinFlip && (lastAutoSelectedPlayer.gameNumber === 1 || lastAutoSelectedPlayer.gameNumber === 4)) ||
+                         (!wonCoinFlip && (lastAutoSelectedPlayer.gameNumber === 2 || lastAutoSelectedPlayer.gameNumber === 3)));
   
   // Debug logs
   console.log(`[renderGameSelection] Game ${gameNum} - Coin flip:`, wonCoinFlip ? "WON" : "LOST");
@@ -1752,6 +1756,7 @@ const renderGameSelection = useCallback((gameNum) => {
                 opponent: lastAutoSelectedPlayer.opponent?.displayName
               } : null);
   console.log(`[renderGameSelection] Game ${gameNum} - showAutoSelected:`, showAutoSelected);
+  
   
   if (homeSelectsBlind) {
     // HOME SELECTS BLIND - we need to show home player selection UI
