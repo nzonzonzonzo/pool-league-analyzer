@@ -1207,7 +1207,7 @@ const chooseDifferentPlayer = (gameNum) => {
   }, 300);
 };
 
-// CORRECTED: Handle opponent selection and find best response
+// FIXED: Handle opponent selection and find best response
 const handleOpponentSelection = (gameNum, player) => {
   if (!player || !player.name) {
     console.error("Invalid player object in handleOpponentSelection");
@@ -1266,22 +1266,24 @@ const handleOpponentSelection = (gameNum, player) => {
         console.error("No best player found");
         alert("Could not find optimal player. Please try again.");
         setIsCalculating(false);
+        processingSelectionRef.current = null; // Clear the flag
         return;
       }
       
       console.log(`Found best player: ${bestPlayer.name}`);
       const bestPlayerCopy = JSON.parse(JSON.stringify(bestPlayer));
       
-      // CORRECTED: Set lastAutoSelectedPlayer only for games where auto-selection happens
-      // Auto-select happens when Away is blind (opponent puts up blind)
-      // For "Won Coin Flip": Games 1 and 4 have Away blind and need auto-select for Home
-      // For "Lost Coin Flip": Games 2 and 3 have Away blind and need auto-select for Home
-      const shouldAutoSelect = 
+      // CRITICAL UPDATE: Only set lastAutoSelectedPlayer for games that SHOULD have auto-selection
+      // Auto-selection ONLY happens when Away is blind in this flow
+      const awayIsBlind = 
         (wonCoinFlip && (gameNum === 1 || gameNum === 4)) || 
         (!wonCoinFlip && (gameNum === 2 || gameNum === 3));
       
-      if (shouldAutoSelect) {
-        // Set lastAutoSelectedPlayer for auto-selection scenarios
+      if (awayIsBlind) {
+        // For these games, opponent selection is for a blind (Away) player
+        // So we DO auto-select the Home player
+        console.log(`Game ${gameNum} - Auto-selecting Home player against Away blind`);
+        
         setLastAutoSelectedPlayer({
           gameNumber: gameNum,
           player: bestPlayerCopy,
@@ -1293,22 +1295,24 @@ const handleOpponentSelection = (gameNum, player) => {
             allMatches
           )
         });
-        console.log(`Setting lastAutoSelectedPlayer for Game ${gameNum}`);
+        
+        // Update player selection - we're auto-selecting here
+        setAvailableHomePlayers(prev => 
+          prev.filter(p => p.name !== bestPlayerCopy.name)
+        );
+        
+        setSelectedPlayers(prev => {
+          const result = {...prev};
+          if (!result[game]) result[game] = { away: opponentCopy };
+          result[game].home = bestPlayerCopy;
+          return result;
+        });
       } else {
-        console.log(`Game ${gameNum} - Not setting lastAutoSelectedPlayer (not an auto-selection game)`);
+        // For games where Away is NOT blind, we should NOT auto-select
+        // This is for Games 2 and 3 when won coin flip, and Games 1 and 4 when lost coin flip
+        console.log(`Game ${gameNum} - NOT auto-selecting (Away is not blind)`);
+        // Do NOT modify selectedPlayers or availableHomePlayers here!
       }
-      
-      // Update player selection
-      setAvailableHomePlayers(prev => 
-        prev.filter(p => p.name !== bestPlayerCopy.name)
-      );
-      
-      setSelectedPlayers(prev => {
-        const result = {...prev};
-        if (!result[game]) result[game] = { away: opponentCopy };
-        result[game].home = bestPlayerCopy;
-        return result;
-      });
       
       // Wait to ensure state updates complete
       setTimeout(() => {
@@ -1324,19 +1328,19 @@ const handleOpponentSelection = (gameNum, player) => {
           if (wonCoinFlip) {
             // WON COIN FLIP PROGRESSION
             if (gameNum === 1) {
-              // After game 1 opponent selection (Away blind), move to game 2 home selection (Home blind)
+              // After game 1 opponent (Away blind) selection, move to game 2 home selection (Home blind)
               setCurrentStep(`game-${nextGameNum}`);
             } else if (gameNum === 2) {
-              // After game 2 opponent selection, move to game 3 home selection (Home blind)
+              // After game 2 opponent selection (Home was blind), move to game 3 home selection (Home blind)
               setCurrentStep(`game-${nextGameNum}`);
             } else if (gameNum === 3) {
-              // After game 3 opponent selection, move to game 4 opponent selection (Away blind)
+              // After game 3 opponent selection (Home was blind), move to game 4 opponent selection (Away blind)
               setCurrentStep(`game-${nextGameNum}-opponent`);
             }
           } else {
             // LOST COIN FLIP PROGRESSION
             if (gameNum === 1) {
-              // After game 1 opponent selection, move to game 2 opponent selection (Away blind)
+              // After game 1 opponent selection (Home was blind), move to game 2 opponent selection (Away blind)
               setCurrentStep(`game-${nextGameNum}-opponent`);
             } else if (gameNum === 2) {
               // After game 2 opponent selection (Away blind), move to game 3 opponent selection (Away blind)
@@ -1653,8 +1657,8 @@ const renderBestPlayerConfirmation = (gameNum) => {
   
   const game = `game${gameNum}`;
   const weSelectBlind = 
-    (wonCoinFlip && (gameNum === 2 || gameNum === 3)) || 
-    (!wonCoinFlip && (gameNum === 1 || gameNum === 4));
+    (wonCoinFlip && (gameNum === 1 || gameNum === 4)) || 
+    (!wonCoinFlip && (gameNum === 2 || gameNum === 3));
 
   // Check if we have a previous auto-selection to show
   const showLastSelection = lastAutoSelectedPlayer && 
