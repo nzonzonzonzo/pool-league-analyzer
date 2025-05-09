@@ -1107,16 +1107,25 @@ const selectPlayerForGame = (game, team, player) => {
     // Choose next screen based on context
     let nextStep;
     
-    // Check explicitly for game4 scenario first
+    // FIXED: Check explicitly for game4 first to ensure proper handling
     if (gameStr === "game4") {
-      console.log("Game 4 completed, moving to summary");
-      nextStep = "summary";
+      if (teamStr === "home") {
+        // For Game 4 home selection (when we select blind), 
+        // always go to opponent selection next
+        nextStep = "game-4-opponent";
+      } else {
+        // For Game 4 away selection (when we're not blind, should rarely get here),
+        // go to summary
+        nextStep = "summary";
+      }
     } else if (teamStr === "home" && 
-        ((!wonCoinFlip && (gameStr === "game1" || gameStr === "game3")) || 
-         (wonCoinFlip && (gameStr === "game2" || gameStr === "game4")))) {
+              ((wonCoinFlip && (gameStr === "game2" || gameStr === "game3")) || 
+               (!wonCoinFlip && (gameStr === "game1" || gameStr === "game4")))) {
+      // When we put up a home player blind, next step is opponent selection for the same game
       nextStep = `game-${gameNumber}-opponent`;
     } else {
-      nextStep = gameNumber < 4 ? `game-${gameNumber + 1}` : "summary";
+      // For other games, go to the next game
+      nextStep = `game-${gameNumber + 1}`;
     }
     
     console.log(`Navigating to: ${nextStep}`);
@@ -1652,17 +1661,22 @@ const renderBestPlayerConfirmation = (gameNum) => {
   };
 
   // Render Game 2, 3, 4 selection with similar pattern
-  const renderGameSelection = useCallback((gameNum) => {
+const renderGameSelection = useCallback((gameNum) => {
   console.log(`Rendering Game ${gameNum} selection screen`);
   
   const game = `game${gameNum}`;
   const weSelectBlind = 
-    (wonCoinFlip && (gameNum === 1 || gameNum === 4)) || 
-    (!wonCoinFlip && (gameNum === 2 || gameNum === 3));
+    (wonCoinFlip && (gameNum === 2 || gameNum === 3)) || 
+    (!wonCoinFlip && (gameNum === 1 || gameNum === 4));
 
-  // Check if we have a previous auto-selection to show
+  // FIXED: Only show auto-selection messages for games where auto-selection happened
+  // Auto-selection happens when Away is blind, which is in Games 1 and 4 for won coin flip
+  // and Games 2 and 3 for lost coin flip
   const showLastSelection = lastAutoSelectedPlayer && 
-                          lastAutoSelectedPlayer.gameNumber === gameNum - 1;
+                           lastAutoSelectedPlayer.gameNumber === gameNum - 1 &&
+                           // Only show for games where auto-selection actually happened
+                           ((wonCoinFlip && (lastAutoSelectedPlayer.gameNumber === 1 || lastAutoSelectedPlayer.gameNumber === 4)) ||
+                            (!wonCoinFlip && (lastAutoSelectedPlayer.gameNumber === 2 || lastAutoSelectedPlayer.gameNumber === 3)));
 
   if (weSelectBlind) {
     // We put up blind
@@ -1766,7 +1780,7 @@ const renderBestPlayerConfirmation = (gameNum) => {
             Start Over
           </button>
         </div>
-      </div>
+       </div>
     );
   } else {
     // Opponent puts up blind, we respond
