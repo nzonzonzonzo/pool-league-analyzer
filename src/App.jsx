@@ -123,7 +123,7 @@ const InfoPopup = ({ isOpen, onClose }) => {
   );
 };
 
-// Enhanced SearchableDropdown with minimum character requirement
+// Enhanced SearchableDropdown with minimum character requirement and fixed toLowerCase
 function SearchableDropdown({ options, value, onChange, placeholder, minChars = 2 }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [isOpen, setIsOpen] = useState(false);
@@ -131,16 +131,17 @@ function SearchableDropdown({ options, value, onChange, placeholder, minChars = 
   const dropdownRef = useRef(null);
   const optionsRef = useRef([]);
 
-// Filter options based on search term
+  // Filter options based on search term - WITH FIXED NULL CHECK
   const filteredOptions = options.filter(option => 
-    option.toLowerCase().includes(searchTerm.toLowerCase())
+    option && typeof option === 'string' && 
+    option.toLowerCase().includes((searchTerm || '').toLowerCase())
   );
-
+  
   // Reset focused index when filtered options change
   useEffect(() => {
     setFocusedIndex(-1);
   }, [filteredOptions.length]);
-
+  
   // Handle outside click to close dropdown
   useEffect(() => {
     function handleClickOutside(event) {
@@ -148,11 +149,10 @@ function SearchableDropdown({ options, value, onChange, placeholder, minChars = 
         setIsOpen(false);
       }
     }
-
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
+  
   // Handle option selection
   const handleSelect = (option) => {
     onChange(option);
