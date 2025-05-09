@@ -1653,8 +1653,8 @@ const renderBestPlayerConfirmation = (gameNum) => {
   
   const game = `game${gameNum}`;
   const weSelectBlind = 
-    (wonCoinFlip && (gameNum === 2 || gameNum === 4)) || 
-    (!wonCoinFlip && (gameNum === 1 || gameNum === 3));
+    (wonCoinFlip && (gameNum === 2 || gameNum === 3)) || 
+    (!wonCoinFlip && (gameNum === 1 || gameNum === 4));
 
   // Check if we have a previous auto-selection to show
   const showLastSelection = lastAutoSelectedPlayer && 
