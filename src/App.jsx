@@ -1659,7 +1659,7 @@ const renderBestPlayerConfirmation = (gameNum) => {
   };
 
   // Render Game 2, 3, 4 selection with similar pattern
-onst renderGameSelection = useCallback((gameNum) => {
+const renderGameSelection = useCallback((gameNum) => {
   console.log(`[renderGameSelection] Game ${gameNum}`);
   console.log(`[renderGameSelection] Current coin flip: ${wonCoinFlip ? "WON" : "LOST"}`);
   
