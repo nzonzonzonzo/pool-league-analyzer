@@ -1753,6 +1753,12 @@ const renderOpponentSelectionScreen = (gameNumber) => {
 const renderGameSelection = useCallback((gameNum) => {
   console.log(`[renderGameSelection] Game ${gameNum}`);
   
+  // Check if this is actually supposed to be an opponent selection screen
+  if (currentStep === `game-${gameNum}-opponent`) {
+    console.log(`[renderGameSelection] Redirecting to renderOpponentSelectionScreen for Game ${gameNum}`);
+    return renderOpponentSelectionScreen(gameNum);
+  }
+  
   const game = `game${gameNum}`;
   
   // FIXED LOGIC: Determine who selects blind based on coin flip and game number
