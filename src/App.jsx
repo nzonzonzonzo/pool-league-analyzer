@@ -88,7 +88,7 @@ const InfoPopup = ({ isOpen, onClose }) => {
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50" onClick={onClose}>
       <div className="bg-gray-800 p-6 border rounded-lg max-w-3xl max-h-[80vh] overflow-y-auto m-4" onClick={(e) => e.stopPropagation()}>
         <div className="flex justify-between items-start mb-4">
-          <h2 className="text-xl font-semibold text-primary">How Win Probabilities and Optimal Matchups Are Calculated</h2>
+          <h2 className="text-xl font-semibold text-neutral-700">How Win Probabilities and Optimal Matchups Are Calculated</h2>
           <button className="bg-transparent hover:opacity-80 transition-opacity duration-200" onClick={onClose}>
             <CloseIcon />
           </button>
@@ -96,7 +96,7 @@ const InfoPopup = ({ isOpen, onClose }) => {
         
         <p className="mb-4 text-gray-300">The Pool Team Stats Analyzer uses advanced algorithms to both calculate individual matchup probabilities and determine the optimal overall lineup strategy.</p>
         
-        <h3 className="text-lg font-medium mb-2 text-primary">Individual Matchup Probability Factors</h3>
+        <h3 className="text-lg font-medium mb-2 text-neutral-700">Individual Matchup Probability Factors</h3>
         <ol className="list-decimal list-inside mb-4 pl-2 text-gray-300">
           <li className="mb-1"><span className="font-medium">Base Win Percentages:</span> Each player's overall win percentage serves as the foundation (30% weight)</li>
           <li className="mb-1"><span className="font-medium">Head-to-Head History:</span> Direct matchup results between the specific players are heavily weighted:
@@ -113,7 +113,7 @@ const InfoPopup = ({ isOpen, onClose }) => {
           </li>
         </ol>
         
-        <h3 className="text-lg font-medium mb-2 text-primary">Team Lineup Optimization (Hungarian Algorithm)</h3>
+        <h3 className="text-lg font-medium mb-2 text-neutral-700">Team Lineup Optimization (Hungarian Algorithm)</h3>
         <p className="mb-2 text-gray-300">To determine the best possible combination of player matchups for your entire team, we implement the Hungarian Algorithm – a sophisticated mathematical approach used in assignment problems. Here's how it works:</p>
         <ol className="list-decimal list-inside mb-4 pl-2 text-gray-300">
           <li className="mb-1"><span className="font-medium">Cost Matrix Creation:</span> The system builds a matrix where:
