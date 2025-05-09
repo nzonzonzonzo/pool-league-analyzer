@@ -132,9 +132,27 @@ function SearchableDropdown({ options, value, onChange, placeholder, minChars = 
   const optionsRef = useRef([]);
 
   // Filter options based on search term - WITH FIXED NULL CHECK
-  const filteredOptions = options.filter(option => 
-    option && option.toLowerCase().includes((searchTerm || '').toLowerCase())
-  );
+  const filteredOptions = options.filter(option => {
+  // Skip null/undefined values
+  if (!option) return false;
+  
+  // Handle the case where searchTerm might be null/undefined
+  const search = searchTerm || '';
+  
+    try {
+      // Try the normal string operation with a safety net
+      return option.toLowerCase().includes(search.toLowerCase());
+    } catch (e) {
+      // If any error occurs, convert to string and try again
+      try {
+        return String(option).toLowerCase().includes(search.toLowerCase());
+      } catch (e2) {
+        // If all else fails, exclude this item
+        console.warn('Could not filter option:', option);
+        return false;
+      }
+    }
+  });
   
   // Reset focused index when filtered options change
   useEffect(() => {
