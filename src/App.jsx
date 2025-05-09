@@ -1139,6 +1139,10 @@ const selectPlayerForGame = (game, team, player) => {
 setTimeout(() => {
   let nextStep;
   
+  // Navigate after state updates
+setTimeout(() => {
+  let nextStep;
+  
   // Always go to opponent selection after we select a home player
   if (teamStr === "home") {
     // Use createOpponentStep for consistency
