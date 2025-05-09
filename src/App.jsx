@@ -11,11 +11,6 @@ const formatName = (fullName) => {
     `${parts.slice(0, parts.length - 1).join(' ')} ${parts[parts.length - 1][0]}.`;
 };
 
-// Toggle theme function
-const toggleDarkMode = () => {
-  setDarkMode(prev => !prev);
-};
-
 // SVG Icon Components
 const LightbulbIcon = () => (
   <svg
@@ -928,7 +923,7 @@ function App() {
     game4: { home: null, away: null },
   });
 
-  // Theme state
+    // Theme state
   const [darkMode, setDarkMode] = useState(() => {
     const savedTheme = localStorage.getItem('theme');
     return savedTheme ? savedTheme === 'dark' : true; // Default to dark mode
@@ -939,6 +934,11 @@ function App() {
     document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : 'light');
     localStorage.setItem('theme', darkMode ? 'dark' : 'light');
   }, [darkMode]);
+
+  // Toggle theme function
+  const toggleDarkMode = () => {
+    setDarkMode(prev => !prev);
+  };
 
    // Define DebugPanel component within App
   const DebugPanel = () => {
