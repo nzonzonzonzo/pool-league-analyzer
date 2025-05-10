@@ -956,6 +956,16 @@ function App() {
     setUserHasSetTheme(true); // Mark that user has made a choice
   };
 
+  // Function to toggle player availability
+const togglePlayerAvailability = (playerName, team) => {
+  // Update the global team stats
+  setTeamStats(prev => prev.map(player => 
+    player.name === playerName 
+      ? { ...player, available: player.available === false ? true : false } 
+      : player
+  ));
+};
+
   // UI state
   const [showInfoPopup, setShowInfoPopup] = useState(false);
   const [isCalculating, setIsCalculating] = useState(false);
@@ -979,6 +989,8 @@ function App() {
   const [selectedAwayTeam, setSelectedAwayTeam] = useState("");
   const [homeTeamPlayers, setHomeTeamPlayers] = useState([]);
   const [awayTeamPlayers, setAwayTeamPlayers] = useState([]);
+  const [homeTeamAllPlayers, setHomeTeamAllPlayers] = useState([]);
+  const [awayTeamAllPlayers, setAwayTeamAllPlayers] = useState([]);
 
   // Game selection process states
   const [currentStep, setCurrentStep] = useState("team-selection");
@@ -991,6 +1003,7 @@ function App() {
     game3: { home: null, away: null },
     game4: { home: null, away: null },
   });
+
 
    // Define DebugPanel component within App
   const DebugPanel = () => {
@@ -1017,7 +1030,24 @@ function App() {
     );
   };
 
-  // Add this with your other state declarations
+  // toggle available players
+  const togglePlayerAvailability = (playerName, team) => {
+    if (team === "home") {
+      setTeamStats(prev => prev.map(player => 
+        player.name === playerName 
+          ? { ...player, available: !player.available } 
+          : player
+      ));
+    } else if (team === "away") {
+      setTeamStats(prev => prev.map(player => 
+        player.name === playerName 
+          ? { ...player, available: !player.available } 
+          : player
+      ));
+    }
+  };
+
+  // helper for autoselected players
 const [lastAutoSelectedPlayer, setLastAutoSelectedPlayer] = useState(null);
 
 useEffect(() => {
@@ -1077,10 +1107,11 @@ useEffect(() => {
         const validMatches = matchesData.filter(match => !match.forfeit);
         setAllMatches(validMatches);
         
-        // Transform stats to add displayName
+        // Transform stats to add displayName and availability
         const transformedStats = statsData.map(player => ({
           ...player,
-          displayName: formatName(player.name)
+          displayName: formatName(player.name),
+          available: true // Default all players to available
         }));
         setTeamStats(transformedStats);
 
@@ -1101,22 +1132,36 @@ useEffect(() => {
 
   // Update team players when selection changes
   useEffect(() => {
-    if (selectedHomeTeam) {
-      const players = teamStats.filter(player => player.team === selectedHomeTeam);
-      setHomeTeamPlayers(players);
-    } else {
-      setHomeTeamPlayers([]);
-    }
-  }, [selectedHomeTeam, teamStats]);
+  if (selectedHomeTeam) {
+    const allTeamPlayers = teamStats.filter(player => player.team === selectedHomeTeam);
+    
+    // Get all players for display in the list (including unavailable ones)
+    setHomeTeamAllPlayers(allTeamPlayers);
+    
+    // Filter to only available players for the actual game
+    const availablePlayers = allTeamPlayers.filter(player => player.available !== false);
+    setHomeTeamPlayers(availablePlayers);
+  } else {
+    setHomeTeamAllPlayers([]);
+    setHomeTeamPlayers([]);
+  }
+}, [selectedHomeTeam, teamStats]);
 
   useEffect(() => {
-    if (selectedAwayTeam) {
-      const players = teamStats.filter(player => player.team === selectedAwayTeam);
-      setAwayTeamPlayers(players);
-    } else {
-      setAwayTeamPlayers([]);
-    }
-  }, [selectedAwayTeam, teamStats]);
+  if (selectedAwayTeam) {
+    const allTeamPlayers = teamStats.filter(player => player.team === selectedAwayTeam);
+    
+    // Get all players for display in the list (including unavailable ones)
+    setAwayTeamAllPlayers(allTeamPlayers);
+    
+    // Filter to only available players for the actual game
+    const availablePlayers = allTeamPlayers.filter(player => player.available !== false);
+    setAwayTeamPlayers(availablePlayers);
+  } else {
+    setAwayTeamAllPlayers([]);
+    setAwayTeamPlayers([]);
+  }
+}, [selectedAwayTeam, teamStats]);
 
   // Calculate optimal player for blind selection
   useEffect(() => {
@@ -2076,24 +2121,39 @@ const renderGameSelection = useCallback((gameNum) => {
                 />
               </div>
 
-              {homeTeamPlayers.length > 0 && (
+              {homeTeamAllPlayers.length > 0 && (
                 <div>
                   <h3 className="font-medium mb-2">
-                    Available Players: {homeTeamPlayers.length}
+                    Available Players: {homeTeamPlayers.length}/{homeTeamAllPlayers.length}
                   </h3>
                   <div className="border rounded p-2 mb-4 max-h-64 overflow-y-auto">
-                    {homeTeamPlayers.map((player) => (
+                    {homeTeamAllPlayers.map((player) => (
                       <div
                         key={`home-player-${player.name}`}
-                        className="p-3 mb-2 rounded-lg border hover:bg-blue-50 transition-all"
+                        className={`p-3 mb-2 rounded-lg border hover:bg-blue-50 transition-all ${player.available === false ? 'opacity-50' : ''}`}
                       >
                         <div className="flex justify-between items-center">
                           <span className="font-medium">{player.displayName}</span>
-                          <span className="text-sm py-1 px-2 pr-3 rounded-full text-primary-dark">
-                            HCP: {player.handicap}
-                          </span>
+                          <div className="flex items-center">
+                            <span className="text-sm py-1 px-2 pr-3 rounded-full text-primary-dark">
+                              HCP: {player.handicap}
+                            </span>
+                            <label className="flex items-center cursor-pointer ml-2">
+                              <input
+                                type="checkbox"
+                                checked={player.available !== false}
+                                onChange={() => togglePlayerAvailability(player.name, "home")}
+                                className="sr-only" // Hide actual checkbox
+                              />
+                              <div className={`relative w-10 h-5 rounded-full transition-colors ${player.available !== false ? 'bg-secondary' : 'bg-neutral-400'}`}>
+                                <div className={`absolute left-0.5 top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${player.available !== false ? 'transform translate-x-5' : ''}`}></div>
+                              </div>
+                              <span className="ml-2 text-xs">{player.available !== false ? 'Available' : 'Unavailable'}</span>
+                            </label>
+                          </div>
                         </div>
                         <div className="text-sm text-gray-600 mt-1 flex items-center">
+                          {/* Existing record information */}
                           <span className="mr-1">Record:</span>
                           <span className="font-medium">
                             {player.wins}-{player.losses}
@@ -2134,22 +2194,36 @@ const renderGameSelection = useCallback((gameNum) => {
                 />
               </div>
 
-              {awayTeamPlayers.length > 0 && (
+              {awayTeamAllPlayers.length > 0 && (
                 <div>
                   <h3 className="font-medium mb-2">
-                    Available Players: {awayTeamPlayers.length}
+                    Available Players: {awayTeamPlayers.length}/{awayTeamAllPlayers.length}
                   </h3>
                   <div className="border rounded p-2 mb-4 max-h-64 overflow-y-auto">
-                    {awayTeamPlayers.map((player) => (
+                    {awayTeamAllPlayers.map((player) => (
                       <div
                         key={`away-player-${player.name}`}
-                        className="p-3 mb-2 rounded-lg border hover:bg-blue-50 transition-all"
+                        className={`p-3 mb-2 rounded-lg border hover:bg-blue-50 transition-all ${player.available === false ? 'opacity-50' : ''}`}
                       >
                         <div className="flex justify-between items-center">
                           <span className="font-medium">{player.displayName}</span>
-                          <span className="text-sm py-1 px-2 pr-3 rounded-full text-primary-dark">
-                            HCP: {player.handicap}
-                          </span>
+                          <div className="flex items-center">
+                            <span className="text-sm py-1 px-2 pr-3 rounded-full text-primary-dark">
+                              HCP: {player.handicap}
+                            </span>
+                            <label className="flex items-center cursor-pointer ml-2">
+                              <input
+                                type="checkbox"
+                                checked={player.available !== false}
+                                onChange={() => togglePlayerAvailability(player.name, "away")}
+                                className="sr-only" // Hide actual checkbox
+                              />
+                              <div className={`relative w-10 h-5 rounded-full transition-colors ${player.available !== false ? 'bg-secondary' : 'bg-neutral-400'}`}>
+                                <div className={`absolute left-0.5 top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${player.available !== false ? 'transform translate-x-5' : ''}`}></div>
+                              </div>
+                              <span className="ml-2 text-xs">{player.available !== false ? 'Available' : 'Unavailable'}</span>
+                            </label>
+                          </div>
                         </div>
                         <div className="text-sm text-gray-600 mt-1 flex items-center">
                           <span className="mr-1">Record:</span>
