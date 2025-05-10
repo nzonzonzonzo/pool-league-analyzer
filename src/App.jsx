@@ -2050,7 +2050,7 @@ const renderGameSelection = useCallback((gameNum) => {
         <div className="container mx-auto p-4">
           <FloatingInfoButton onClick={() => setShowInfoPopup(true)} />
           <InfoPopup isOpen={showInfoPopup} onClose={() => setShowInfoPopup(false)} />
-          <h1 className="text-3xl font-bold mb-6 text-center">
+          <h1 className="app-title text-3xl font-bold mb-6 text-center">
             Pool Team Stats Analyzer
           </h1>
           <div className="text-xs text-gray-500 mb-4">
@@ -2194,7 +2194,7 @@ const renderGameSelection = useCallback((gameNum) => {
         <div className="container mx-auto p-4">
           <FloatingInfoButton onClick={() => setShowInfoPopup(true)} />
           <InfoPopup isOpen={showInfoPopup} onClose={() => setShowInfoPopup(false)} />
-          <h1 className="text-3xl font-bold mb-6 text-center">
+          <h1 className="app-title text-3xl font-bold mb-6 text-center">
             Pool Team Stats Analyzer
           </h1>
 
@@ -2247,7 +2247,7 @@ const renderGameSelection = useCallback((gameNum) => {
           <div className="container mx-auto p-4">
             <FloatingInfoButton onClick={() => setShowInfoPopup(true)} />
             <InfoPopup isOpen={showInfoPopup} onClose={() => setShowInfoPopup(false)} />
-            <h1 className="text-3xl font-bold mb-6 text-center">
+            <h1 className="app-title text-3xl font-bold mb-6 text-center">
               Pool Team Stats Analyzer
             </h1>
 
@@ -2296,7 +2296,7 @@ const renderGameSelection = useCallback((gameNum) => {
           <div className="container mx-auto p-4">
             <FloatingInfoButton onClick={() => setShowInfoPopup(true)} />
             <InfoPopup isOpen={showInfoPopup} onClose={() => setShowInfoPopup(false)} />
-            <h1 className="text-3xl font-bold mb-6 text-center">
+            <h1 className="app-title text-3xl font-bold mb-6 text-center">
               Pool Team Stats Analyzer
             </h1>
 
@@ -2546,7 +2546,9 @@ if (currentStep === "summary") {
   // Final fallback
   return (
     <div className="container mx-auto p-4 text-center">
-      <h1 className="text-3xl font-bold mb-6">Pool Team Stats Analyzer</h1>
+      <h1 className="app-title text-3xl font-bold mb-6 text-center">
+  Pool Team Stats Analyzer
+</h1>
       <p>Unrecognized state: {currentStep}</p>
       <button
         className="px-4 py-2 bg-blue-600 text-white rounded mt-4"
