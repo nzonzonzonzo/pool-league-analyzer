@@ -2143,24 +2143,14 @@ const renderGameSelection = useCallback((gameNum) => {
                             </div>
                           </div>
                           
-                          {/* Availability toggle, now on the right side */}
-                          <label className="inline-flex items-center cursor-pointer">
-                            <input
+                          {/* New toggle switch */}
+                          <label className="toggle-switch">
+                            <input 
                               type="checkbox"
                               checked={player.available !== false}
-                              onChange={() => togglePlayerAvailability(player.name, "home")}
-                              className="hidden" 
+                              onChange={() => togglePlayerAvailability(player.name, "home")} 
                             />
-                            <div className={`flex items-center justify-center w-5 h-5 rounded mr-2 ${player.available !== false ? 'bg-primary' : 'bg-neutral-400'}`}>
-                              {player.available !== false && (
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3 text-white">
-                                  <polyline points="20 6 9 17 4 12"></polyline>
-                                </svg>
-                              )}
-                            </div>
-                            <span className="text-xs">
-                              {player.available !== false ? 'Available' : 'Unavailable'}
-                            </span>
+                            <span className="toggle-slider"></span>
                           </label>
                         </div>
                       </div>
@@ -2223,24 +2213,14 @@ const renderGameSelection = useCallback((gameNum) => {
                             </div>
                           </div>
                           
-                          {/* Availability toggle, now on the right side */}
-                          <label className="inline-flex items-center cursor-pointer">
-                            <input
+                          {/* New toggle switch */}
+                          <label className="toggle-switch">
+                            <input 
                               type="checkbox"
                               checked={player.available !== false}
-                              onChange={() => togglePlayerAvailability(player.name, "away")}
-                              className="hidden" 
+                              onChange={() => togglePlayerAvailability(player.name, "away")} 
                             />
-                            <div className={`flex items-center justify-center w-5 h-5 rounded mr-2 ${player.available !== false ? 'bg-primary' : 'bg-neutral-400'}`}>
-                              {player.available !== false && (
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3 text-white">
-                                  <polyline points="20 6 9 17 4 12"></polyline>
-                                </svg>
-                              )}
-                            </div>
-                            <span className="text-xs">
-                              {player.available !== false ? 'Available' : 'Unavailable'}
-                            </span>
+                            <span className="toggle-slider"></span>
                           </label>
                         </div>
                       </div>
