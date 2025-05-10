@@ -532,8 +532,8 @@ tr:hover td {
 .toggle-switch {
   position: relative;
   display: inline-block;
-  width: 46px;
-  height: 24px;
+  width: 38px;
+  height: 18px;
   cursor: pointer;
 }
 
