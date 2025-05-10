@@ -366,6 +366,28 @@ tr:hover td {
 }
 
 /* CSS Variable Usage in Class Names */
+
+.bottom-1 { bottom: 0.25rem; }
+.bottom-2 { bottom: 0.5rem; }
+.bottom-3 { bottom: 0.75rem; }
+.bottom-4 { bottom: 1rem; }
+.bottom-6 { bottom: 1.5rem; }
+.bottom-8 { bottom: 2rem; }
+
+.left-1 { left: 0.25rem; }
+.left-2 { left: 0.5rem; }
+.left-3 { left: 0.75rem; }
+.left-4 { left: 1rem; }
+.left-6 { left: 1.5rem; }
+.left-8 { left: 2rem; }
+
+.right-1 { right: 0.25rem; }
+.right-2 { right: 0.5rem; }
+.right-3 { right: 0.75rem; }
+.right-4 { right: 1rem; }
+.right-6 { right: 1.5rem; }
+.right-8 { right: 2rem; }
+
 .inset-0 { top: 0; right: 0; bottom: 0; left: 0; }
 .bg-opacity-50 { --tw-bg-opacity: 0.5; }
 .z-50 { z-index: 50; }
@@ -502,6 +524,11 @@ tr:hover td {
 .overflow-hidden { overflow: hidden; }
 .cursor-pointer { cursor: pointer; }
 
+.app-title {
+  font-size: 1.875rem; /* equivalent to text-3xl */
+  margin-bottom: 1.5rem; /* equivalent to mb-6 */
+}
+
 /* Responsive utilities */
 @media (min-width: 768px) {
   .md\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -509,6 +536,13 @@ tr:hover td {
 
 @media (min-width: 1024px) {
   .lg\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 640px) {
+  .app-title {
+    font-size: 1.5rem; /* smaller font for phones */
+    margin-bottom: 1rem; /* smaller margin for phones */
+  }
 }
 
 /* Classes for the player availability toggle */
