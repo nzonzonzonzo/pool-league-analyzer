@@ -2194,18 +2194,7 @@ const renderGameSelection = useCallback((gameNum) => {
                             <span className="text-sm py-1 px-2 pr-3 rounded-full text-primary-dark">
                               HCP: {player.handicap}
                             </span>
-                            <label className="flex items-center cursor-pointer ml-2">
-                              <input
-                                type="checkbox"
-                                checked={player.available !== false}
-                                onChange={() => togglePlayerAvailability(player.name, "away")}
-                                className="sr-only" // Hide actual checkbox
-                              />
-                              <div className={`relative w-10 h-5 rounded-full transition-colors ${player.available !== false ? 'bg-secondary' : 'bg-neutral-400'}`}>
-                                <div className={`absolute left-0.5 top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${player.available !== false ? 'transform translate-x-5' : ''}`}></div>
-                              </div>
-                              <span className="ml-2 text-xs">{player.available !== false ? 'Available' : 'Unavailable'}</span>
-                            </label>
+                            
                           </div>
                         </div>
                         <div className="text-sm text-gray-600 mt-1 flex items-center">
@@ -2226,6 +2215,18 @@ const renderGameSelection = useCallback((gameNum) => {
                             <span className="text-xs">
                               ({player.winPercentage}%)
                             </span>
+                            <label className="flex items-center cursor-pointer ml-2">
+                              <input
+                                type="checkbox"
+                                checked={player.available !== false}
+                                onChange={() => togglePlayerAvailability(player.name, "away")}
+                                className="sr-only" // Hide actual checkbox
+                              />
+                              <div className={`relative w-10 h-5 rounded-full transition-colors ${player.available !== false ? 'bg-secondary' : 'bg-neutral-400'}`}>
+                                <div className={`absolute left-0.5 top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${player.available !== false ? 'transform translate-x-5' : ''}`}></div>
+                              </div>
+                              <span className="ml-2 text-xs">{player.available !== false ? 'Available' : 'Unavailable'}</span>
+                            </label>
                           </div>
                         </div>
                       </div>
