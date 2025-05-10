@@ -2104,60 +2104,61 @@ const renderGameSelection = useCallback((gameNum) => {
                 />
               </div>
 
-              {homeTeamAllPlayers.length > 0 && (
-                <div>
-                  <h3 className="font-medium mb-2">
-                    Available Players: {homeTeamPlayers.length}/{homeTeamAllPlayers.length}
-                  </h3>
-                  <div className="border rounded p-2 mb-4 max-h-64 overflow-y-auto">
-                    {homeTeamAllPlayers.map((player) => (
-                      <div
-                        key={`home-player-${player.name}`}
-                        className={`p-3 mb-2 rounded-lg border hover:bg-blue-50 transition-all ${player.available === false ? 'opacity-50' : ''}`}
-                      >
-                        <div className="flex justify-between items-center">
-                          <span className="font-medium">{player.displayName}</span>
-                          <div className="flex items-center">
-                            <span className="text-sm py-1 px-2 pr-3 rounded-full text-primary-dark">
-                              HCP: {player.handicap}
-                            </span>
-                            <label className="flex items-center cursor-pointer ml-2">
-                              <input
-                                type="checkbox"
-                                checked={player.available !== false}
-                                onChange={() => togglePlayerAvailability(player.name, "home")}
-                                className="sr-only" // Hide actual checkbox
-                              />
-                              <div className={`relative w-10 h-5 rounded-full transition-colors ${player.available !== false ? 'bg-secondary' : 'bg-neutral-400'}`}>
-                                <div className={`absolute left-0.5 top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${player.available !== false ? 'transform translate-x-5' : ''}`}></div>
-                              </div>
-                              <span className="ml-2 text-xs">{player.available !== false ? 'Available' : 'Unavailable'}</span>
-                            </label>
-                          </div>
+              {homeTeamAllPlayers.map((player) => (
+                <div
+                  key={`home-player-${player.name}`}
+                  className={`p-3 px-4 mb-2 rounded-lg border hover:bg-blue-50 transition-all ${player.available === false ? 'opacity-50' : ''}`}
+                >
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium">{player.displayName}</span>
+                    <span className="text-sm py-1 px-2 rounded-full text-primary-dark">
+                      HCP: {player.handicap}
+                    </span>
+                  </div>
+                  <div className="text-sm text-gray-600 mt-1 flex justify-between items-center">
+                    <div className="flex items-center">
+                      <span className="mr-1">Record:</span>
+                      <span className="font-medium">
+                        {player.wins}-{player.losses}
+                      </span>
+                      <span className="mx-1">•</span>
+                      <div className="flex items-center">
+                        <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden mr-1">
+                          <div
+                            className="h-full bg-green-500"
+                            style={{
+                              width: `${parseInt(player.winPercentage)}%`,
+                            }}
+                          ></div>
                         </div>
-                        <div className="text-sm text-gray-600 mt-1 flex items-center">
-                          {/* Existing record information */}
-                          <span className="mr-1">Record:</span>
-                          <span className="font-medium">
-                            {player.wins}-{player.losses}
-                          </span>
-                          <span className="mx-1">•</span>
-                          <div className="flex items-center">
-                            <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden mr-1">
-                              <div
-                                className="h-full bg-green-500"
-                                style={{
-                                  width: `${parseInt(player.winPercentage)}%`,
-                                }}
-                              ></div>
-                            </div>
-                            <span className="text-xs">
-                              ({player.winPercentage}%)
-                            </span>
-                          </div>
-                        </div>
+                        <span className="text-xs">
+                          ({player.winPercentage}%)
+                        </span>
                       </div>
-                    ))}
+                    </div>
+                    
+                    {/* Availability toggle, now on the right side */}
+                    <label className="inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={player.available !== false}
+                        onChange={() => togglePlayerAvailability(player.name, "home")}
+                        className="hidden" 
+                      />
+                      <div className={`flex items-center justify-center w-5 h-5 rounded mr-2 ${player.available !== false ? 'bg-primary' : 'bg-neutral-400'}`}>
+                        {player.available !== false && (
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3 text-white">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                          </svg>
+                        )}
+                      </div>
+                      <span className="text-xs">
+                        {player.available !== false ? 'Available' : 'Unavailable'}
+                      </span>
+                    </label>
+                  </div>
+                </div>
+              ))}
                   </div>
                 </div>
               )}
@@ -2194,53 +2195,38 @@ const renderGameSelection = useCallback((gameNum) => {
                             <span className="text-sm py-1 px-2 pr-3 rounded-full text-primary-dark">
                               HCP: {player.handicap}
                             </span>
+                            <label className="flex items-center cursor-pointer ml-2">
+                              <input
+                                type="checkbox"
+                                checked={player.available !== false}
+                                onChange={() => togglePlayerAvailability(player.name, "away")}
+                                className="sr-only" // Hide actual checkbox
+                              />
+                              <div className={`relative w-10 h-5 rounded-full transition-colors ${player.available !== false ? 'bg-secondary' : 'bg-neutral-400'}`}>
+                                <div className={`absolute left-0.5 top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${player.available !== false ? 'transform translate-x-5' : ''}`}></div>
+                              </div>
+                              <span className="ml-2 text-xs">{player.available !== false ? 'Available' : 'Unavailable'}</span>
+                            </label>
                           </div>
                         </div>
-                        <div className="flex justify-between items-center">
-                          <div className="text-sm text-gray-600 mt-1 flex items-center">
-                            <span className="mr-1">Record:</span>
-                            <span className="font-medium">
-                              {player.wins}-{player.losses}
-                            </span>
-                            <span className="mx-1">•</span>
-                            <div className="flex items-center">
-                              <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden mr-1">
-                                <div
-                                  className="h-full bg-green-500"
-                                  style={{
-                                    width: `${parseInt(player.winPercentage)}%`,
-                                  }}
-                                ></div>
-                              </div>
-                              <span className="text-xs">
-                                ({player.winPercentage}%)
-                              </span>
-                              <label className="flex items-center cursor-pointer ml-2">
-                                <input
-                                  type="checkbox"
-                                  checked={player.available !== false}
-                                  onChange={() => togglePlayerAvailability(player.name, "away")}
-                                  className="sr-only" // Hide actual checkbox
-                                />
-                                {/* Toggle background */}
-                                <div className={`relative w-10 h-5 rounded-full transition-colors duration-300 ${
-                                  player.available !== false 
-                                    ? 'bg-secondary' 
-                                    : 'bg-neutral-400'
-                                }`}>
-                                  {/* Toggle slider handle */}
-                                  <div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow-md transform transition-transform duration-300 ${
-                                    player.available !== false 
-                                      ? 'translate-x-5' 
-                                      : 'translate-x-0'
-                                  }`}></div>
-                                </div>
-                                {/* Status text */}
-                                <span className="ml-2 text-xs">
-                                  {player.available !== false ? 'Available' : 'Unavailable'}
-                                </span>
-                              </label>
+                        <div className="text-sm text-gray-600 mt-1 flex items-center">
+                          <span className="mr-1">Record:</span>
+                          <span className="font-medium">
+                            {player.wins}-{player.losses}
+                          </span>
+                          <span className="mx-1">•</span>
+                          <div className="flex items-center">
+                            <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden mr-1">
+                              <div
+                                className="h-full bg-green-500"
+                                style={{
+                                  width: `${parseInt(player.winPercentage)}%`,
+                                }}
+                              ></div>
                             </div>
+                            <span className="text-xs">
+                              ({player.winPercentage}%)
+                            </span>
                           </div>
                         </div>
                       </div>
