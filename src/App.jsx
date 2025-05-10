@@ -1030,23 +1030,6 @@ const togglePlayerAvailability = (playerName, team) => {
     );
   };
 
-  // toggle available players
-  const togglePlayerAvailability = (playerName, team) => {
-    if (team === "home") {
-      setTeamStats(prev => prev.map(player => 
-        player.name === playerName 
-          ? { ...player, available: !player.available } 
-          : player
-      ));
-    } else if (team === "away") {
-      setTeamStats(prev => prev.map(player => 
-        player.name === playerName 
-          ? { ...player, available: !player.available } 
-          : player
-      ));
-    }
-  };
-
   // helper for autoselected players
 const [lastAutoSelectedPlayer, setLastAutoSelectedPlayer] = useState(null);
 
