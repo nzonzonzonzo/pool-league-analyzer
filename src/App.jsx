@@ -2116,14 +2116,14 @@ const renderGameSelection = useCallback((gameNum) => {
                         className={`p-3 px-4 mb-2 rounded-lg border hover:bg-blue-50 transition-all ${player.available === false ? 'opacity-50' : ''}`}
                       >
                         <div className="flex justify-between items-center">
-                          <span className="font-medium">{player.displayName}</span>
+                          <span className="font-medium  px-2">{player.displayName}</span>
                           <span className="text-sm py-1 px-2 rounded-full text-primary-dark">
                             HCP: {player.handicap}
                           </span>
                         </div>
                         <div className="text-sm text-gray-600 mt-1 flex justify-between items-center">
                           <div className="flex items-center">
-                            <span className="mr-1">Record:</span>
+                            <span className="mr-1 px-2">Record:</span>
                             <span className="font-medium">
                               {player.wins}-{player.losses}
                             </span>
@@ -2144,7 +2144,7 @@ const renderGameSelection = useCallback((gameNum) => {
                           </div>
                           
                           {/* New toggle switch */}
-                          <label className="toggle-switch">
+                          <label className="toggle-switch py-1 px-2">
                             <input 
                               type="checkbox"
                               checked={player.available !== false}
@@ -2186,14 +2186,14 @@ const renderGameSelection = useCallback((gameNum) => {
                         className={`p-3 px-4 mb-2 rounded-lg border hover:bg-blue-50 transition-all ${player.available === false ? 'opacity-50' : ''}`}
                       >
                         <div className="flex justify-between items-center">
-                          <span className="font-medium">{player.displayName}</span>
+                          <span className="font-medium  px-2">{player.displayName}</span>
                           <span className="text-sm py-1 px-2 rounded-full text-primary-dark">
                             HCP: {player.handicap}
                           </span>
                         </div>
                         <div className="text-sm text-gray-600 mt-1 flex justify-between items-center">
                           <div className="flex items-center">
-                            <span className="mr-1">Record:</span>
+                            <span className="mr-1  px-2">Record:</span>
                             <span className="font-medium">
                               {player.wins}-{player.losses}
                             </span>
@@ -2214,7 +2214,7 @@ const renderGameSelection = useCallback((gameNum) => {
                           </div>
                           
                           {/* New toggle switch */}
-                          <label className="toggle-switch">
+                          <label className="toggle-switch  px-2">
                             <input 
                               type="checkbox"
                               checked={player.available !== false}
