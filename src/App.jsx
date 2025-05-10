@@ -2144,7 +2144,8 @@ const renderGameSelection = useCallback((gameNum) => {
                           </div>
                           
                           {/* New toggle switch */}
-                          <label className="toggle-switch py-1 px-2">
+                          <span className="px-2">
+                          <label className="toggle-switch">
                             <input 
                               type="checkbox"
                               checked={player.available !== false}
@@ -2152,6 +2153,7 @@ const renderGameSelection = useCallback((gameNum) => {
                             />
                             <span className="toggle-slider"></span>
                           </label>
+                          </span>
                         </div>
                       </div>
                     ))}
@@ -2214,7 +2216,8 @@ const renderGameSelection = useCallback((gameNum) => {
                           </div>
                           
                           {/* New toggle switch */}
-                          <label className="toggle-switch  px-2">
+                          <span className="px-2">
+                          <label className="toggle-switch">
                             <input 
                               type="checkbox"
                               checked={player.available !== false}
@@ -2222,6 +2225,7 @@ const renderGameSelection = useCallback((gameNum) => {
                             />
                             <span className="toggle-slider"></span>
                           </label>
+                          </span>
                         </div>
                       </div>
                     ))}
