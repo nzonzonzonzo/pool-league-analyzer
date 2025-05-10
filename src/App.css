@@ -522,6 +522,11 @@ tr:hover td {
 .overflow-hidden { overflow: hidden; }
 .cursor-pointer { cursor: pointer; }
 
+.app-title {
+  font-size: 1.875rem; /* equivalent to text-3xl */
+  margin-bottom: 1.5rem; /* equivalent to mb-6 */
+}
+
 /* Responsive utilities */
 @media (min-width: 768px) {
   .md\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -532,9 +537,10 @@ tr:hover td {
 }
 
 @media (max-width: 640px) {
-  .sm\:text-2xl { font-size: 1.5rem; }
-  .sm\:text-xl { font-size: 1.25rem; }
-  .sm\:mb-4 { margin-bottom: 1rem; }
+  .app-title {
+    font-size: 1.5rem; /* smaller font for phones */
+    margin-bottom: 1rem; /* smaller margin for phones */
+  }
 }
 
 /* Color adjustments for specific cards in light mode */

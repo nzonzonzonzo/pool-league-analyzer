@@ -13,13 +13,13 @@ const formatName = (fullName) => {
 // Theme toggle component
 const ThemeToggle = ({ darkMode, toggleDarkMode }) => {
   return (
-    <button 
+     <span 
       onClick={toggleDarkMode}
-      className="fixed text-xs text-neutral-500 hover:text-neutral-400 transition-colors z-30"
+      className="fixed text-xs text-neutral-500 hover:text-neutral-400 transition-colors z-30 cursor-pointer"
       style={{ bottom: '1rem', right: '1rem' }}
     >
       Change theme
-    </button>
+    </span>
   );
 };
 
@@ -1549,9 +1549,9 @@ const renderBestPlayerConfirmation = (gameNum) => {
     
     return (
       <div className="container mx-auto p-4 text-center">
-        <h1 className="text-3xl sm:text-2xl font-bold mb-6 sm:mb-4 text-center">
-          Pool Team Stats Analyzer
-        </h1>
+        <h1 className="app-title text-3xl font-bold mb-6 text-center">
+  Pool Team Stats Analyzer
+</h1>
         <div className="bg-yellow-50 p-6 rounded-lg mb-8 border border-yellow-300">
           <h2 className="text-xl font-semibold mb-4">Data Loading Error</h2>
           <p className="mb-4">
@@ -1596,7 +1596,7 @@ const renderBestPlayerConfirmation = (gameNum) => {
     <div className="container mx-auto p-4">
       <FloatingInfoButton onClick={() => setShowInfoPopup(true)} />
       <InfoPopup isOpen={showInfoPopup} onClose={() => setShowInfoPopup(false)} />
-      <h1 className="text-3xl sm:text-2xl font-bold mb-6 sm:mb-4 text-center">
+      <<h1 className="app-title text-3xl font-bold mb-6 text-center">
   Pool Team Stats Analyzer
 </h1>
       
@@ -1664,7 +1664,7 @@ const renderBestPlayerConfirmation = (gameNum) => {
       <div className="container mx-auto p-4">
         <FloatingInfoButton onClick={() => setShowInfoPopup(true)} />
         <InfoPopup isOpen={showInfoPopup} onClose={() => setShowInfoPopup(false)} />
-        <h1 className="text-3xl sm:text-2xl font-bold mb-6 sm:mb-4 text-center">
+        <<h1 className="app-title text-3xl font-bold mb-6 text-center">
   Pool Team Stats Analyzer
 </h1>
         
@@ -1737,7 +1737,7 @@ const renderOpponentSelectionScreen = (gameNumber) => {
     <div className="container mx-auto p-4">
       <FloatingInfoButton onClick={() => setShowInfoPopup(true)} />
       <InfoPopup isOpen={showInfoPopup} onClose={() => setShowInfoPopup(false)} />
-      <h1 className="text-3xl sm:text-2xl font-bold mb-6 sm:mb-4 text-center">
+      <<h1 className="app-title text-3xl font-bold mb-6 text-center">
   Pool Team Stats Analyzer
 </h1>
       
@@ -1858,7 +1858,7 @@ const renderGameSelection = useCallback((gameNum) => {
       <div className="container mx-auto p-4">
         <FloatingInfoButton onClick={() => setShowInfoPopup(true)} />
         <InfoPopup isOpen={showInfoPopup} onClose={() => setShowInfoPopup(false)} />
-        <h1 className="text-3xl sm:text-2xl font-bold mb-6 sm:mb-4 text-center">
+        <<h1 className="app-title text-3xl font-bold mb-6 text-center">
   Pool Team Stats Analyzer
 </h1>
         
@@ -1962,7 +1962,7 @@ const renderGameSelection = useCallback((gameNum) => {
       <div className="container mx-auto p-4">
         <FloatingInfoButton onClick={() => setShowInfoPopup(true)} />
         <InfoPopup isOpen={showInfoPopup} onClose={() => setShowInfoPopup(false)} />
-        <h1 className="text-3xl sm:text-2xl font-bold mb-6 sm:mb-4 text-center">
+        <<h1 className="app-title text-3xl font-bold mb-6 text-center">
   Pool Team Stats Analyzer
 </h1>
 
@@ -2393,7 +2393,7 @@ if (currentStep === "summary") {
     console.error("No selected players found for summary");
     return (
       <div className="container mx-auto p-4">
-        <h1 className="text-3xl sm:text-2xl font-bold mb-6 sm:mb-4 text-center">
+        <<h1 className="app-title text-3xl font-bold mb-6 text-center">
   Pool Team Stats Analyzer
 </h1>
         <div className="bg-yellow-50 p-6 rounded-lg mb-8 border border-yellow-300">
@@ -2445,7 +2445,7 @@ if (currentStep === "summary") {
     <div className="container mx-auto p-4">
       <FloatingInfoButton onClick={() => setShowInfoPopup(true)} />
       <InfoPopup isOpen={showInfoPopup} onClose={() => setShowInfoPopup(false)} />
-      <h1 className="text-3xl sm:text-2xl font-bold mb-6 sm:mb-4 text-center">
+      <<h1 className="app-title text-3xl font-bold mb-6 text-center">
   Pool Team Stats Analyzer
 </h1>
 
