@@ -374,10 +374,29 @@ tr:hover td {
 .max-h-\[80vh\] { max-height: 80vh; }
 .m-4 { margin: 1rem; }
 
+.bottom-1 { bottom: 0.25rem; }
+.bottom-2 { bottom: 0.5rem; }
+.bottom-3 { bottom: 0.75rem; }
+.bottom-4 { bottom: 1rem; }
+.bottom-6 { bottom: 1.5rem; }
+.bottom-8 { bottom: 2rem; }
+
+.left-1 { left: 0.25rem; }
+.left-2 { left: 0.5rem; }
+.left-3 { left: 0.75rem; }
+.left-4 { left: 1rem; }
+.left-6 { left: 1.5rem; }
+.left-8 { left: 2rem; }
+
+.right-1 { right: 0.25rem; }
+.right-2 { right: 0.5rem; }
+.right-3 { right: 0.75rem; }
+.right-4 { right: 1rem; }
+.right-6 { right: 1.5rem; }
+.right-8 { right: 2rem; }
+
 .fixed { position: fixed; }
 .top-4 { top: 1rem; }
-.right-4 { right: 1rem; }
-.left-4 { left: 1rem; }
 .z-40 { z-index: 40; }
 .p-0 { padding: 0; }
 .bg-transparent { background-color: transparent; }
@@ -510,6 +529,12 @@ tr:hover td {
 
 @media (min-width: 1024px) {
   .lg\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 640px) {
+  .sm\:text-2xl { font-size: 1.5rem; }
+  .sm\:text-xl { font-size: 1.25rem; }
+  .sm\:mb-4 { margin-bottom: 1rem; }
 }
 
 /* Color adjustments for specific cards in light mode */

@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import "./App.css";
-import ThemeToggle from './ThemeToggle'; 
 
 // Name formatting utility - more economical implementation
 const formatName = (fullName) => {
@@ -14,10 +13,19 @@ const formatName = (fullName) => {
 // Add these constants outside your App function
 const getInitialTheme = () => {
   try {
+    // Check if user has explicitly set a theme preference
     const savedTheme = localStorage.getItem('theme');
-    return savedTheme ? savedTheme === 'dark' : true; // Default to dark
+    if (savedTheme) {
+      return savedTheme === 'dark';
+    }
+    
+    // If no saved preference, use time-based default
+    const currentHour = new Date().getHours();
+    const isDaytime = currentHour >= 9 && currentHour < 19; // 9am to 7pm
+    
+    return !isDaytime; // Return dark mode for nighttime, light mode for daytime
   } catch {
-    return true; // Fallback to dark mode
+    return true; // Fallback to dark mode if there's an error
   }
 };
 
@@ -910,16 +918,26 @@ function findOptimalBlindPlayer(availableHomePlayers, availableAwayPlayers, team
 }
 
 function App() {
-// Simplified state for dark mode
   const [darkMode, setDarkMode] = useState(getInitialTheme());
-  
-  // Simple effect for theme changes
+  const [userHasSetTheme, setUserHasSetTheme] = useState(
+    localStorage.getItem('theme') !== null
+  );
+
+  // Apply theme to document
   useEffect(() => {
-    applyTheme(darkMode);
-  }, [darkMode]);
-  
-  // Simple toggle function
-  const toggleDarkMode = () => setDarkMode(!darkMode);
+    document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : 'light');
+    
+    // Only save to localStorage if user has explicitly chosen a theme
+    if (userHasSetTheme) {
+      localStorage.setItem('theme', darkMode ? 'dark' : 'light');
+    }
+  }, [darkMode, userHasSetTheme]);
+
+  // Toggle theme function
+  const toggleDarkMode = () => {
+    setDarkMode(prev => !prev);
+    setUserHasSetTheme(true); // Mark that user has made a choice
+  };
 
   // UI state
   const [showInfoPopup, setShowInfoPopup] = useState(false);
@@ -1518,7 +1536,7 @@ const renderBestPlayerConfirmation = (gameNum) => {
     
     return (
       <div className="container mx-auto p-4 text-center">
-        <h1 className="text-3xl font-bold mb-6 text-center">
+        <h1 className="text-3xl sm:text-2xl font-bold mb-6 sm:mb-4 text-center">
           Pool Team Stats Analyzer
         </h1>
         <div className="bg-yellow-50 p-6 rounded-lg mb-8 border border-yellow-300">
@@ -1565,9 +1583,9 @@ const renderBestPlayerConfirmation = (gameNum) => {
     <div className="container mx-auto p-4">
       <FloatingInfoButton onClick={() => setShowInfoPopup(true)} />
       <InfoPopup isOpen={showInfoPopup} onClose={() => setShowInfoPopup(false)} />
-      <h1 className="text-3xl font-bold mb-6 text-center">
-        Pool Team Stats Analyzer
-      </h1>
+      <h1 className="text-3xl sm:text-2xl font-bold mb-6 sm:mb-4 text-center">
+  Pool Team Stats Analyzer
+</h1>
       
       <div className="bg-blue-50 p-6 rounded-lg mb-8">
         <h2 className="text-xl font-semibold mb-4">Optimal Player for Game {gameNum}</h2>
@@ -1633,9 +1651,9 @@ const renderBestPlayerConfirmation = (gameNum) => {
       <div className="container mx-auto p-4">
         <FloatingInfoButton onClick={() => setShowInfoPopup(true)} />
         <InfoPopup isOpen={showInfoPopup} onClose={() => setShowInfoPopup(false)} />
-        <h1 className="text-3xl font-bold mb-6 text-center">
-          Pool Team Stats Analyzer
-        </h1>
+        <h1 className="text-3xl sm:text-2xl font-bold mb-6 sm:mb-4 text-center">
+  Pool Team Stats Analyzer
+</h1>
         
         <div className="bg-blue-50 p-6 rounded-lg mb-8">
           <h2 className="text-xl font-semibold mb-4">Select Player for Game {gameNum}</h2>
@@ -1706,9 +1724,9 @@ const renderOpponentSelectionScreen = (gameNumber) => {
     <div className="container mx-auto p-4">
       <FloatingInfoButton onClick={() => setShowInfoPopup(true)} />
       <InfoPopup isOpen={showInfoPopup} onClose={() => setShowInfoPopup(false)} />
-      <h1 className="text-3xl font-bold mb-6 text-center">
-        Pool Team Stats Analyzer
-      </h1>
+      <h1 className="text-3xl sm:text-2xl font-bold mb-6 sm:mb-4 text-center">
+  Pool Team Stats Analyzer
+</h1>
       
       {/* Add auto-selection notification here */}
       {showLastAutoSelection && (
@@ -1827,9 +1845,9 @@ const renderGameSelection = useCallback((gameNum) => {
       <div className="container mx-auto p-4">
         <FloatingInfoButton onClick={() => setShowInfoPopup(true)} />
         <InfoPopup isOpen={showInfoPopup} onClose={() => setShowInfoPopup(false)} />
-        <h1 className="text-3xl font-bold mb-6 text-center">
-          Pool Team Stats Analyzer
-        </h1>
+        <h1 className="text-3xl sm:text-2xl font-bold mb-6 sm:mb-4 text-center">
+  Pool Team Stats Analyzer
+</h1>
         
         {/* Show auto-selected player notification if available */}
         {showAutoSelected && (
@@ -1931,9 +1949,9 @@ const renderGameSelection = useCallback((gameNum) => {
       <div className="container mx-auto p-4">
         <FloatingInfoButton onClick={() => setShowInfoPopup(true)} />
         <InfoPopup isOpen={showInfoPopup} onClose={() => setShowInfoPopup(false)} />
-        <h1 className="text-3xl font-bold mb-6 text-center">
-          Pool Team Stats Analyzer
-        </h1>
+        <h1 className="text-3xl sm:text-2xl font-bold mb-6 sm:mb-4 text-center">
+  Pool Team Stats Analyzer
+</h1>
 
         {/* Show auto-selected player notification if available */}
         {showAutoSelected && (
@@ -2362,9 +2380,9 @@ if (currentStep === "summary") {
     console.error("No selected players found for summary");
     return (
       <div className="container mx-auto p-4">
-        <h1 className="text-3xl font-bold mb-6 text-center">
-          Pool Team Stats Analyzer
-        </h1>
+        <h1 className="text-3xl sm:text-2xl font-bold mb-6 sm:mb-4 text-center">
+  Pool Team Stats Analyzer
+</h1>
         <div className="bg-yellow-50 p-6 rounded-lg mb-8 border border-yellow-300">
           <h2 className="text-xl font-semibold mb-4">No Match Data Found</h2>
           <p className="mb-4">
@@ -2414,9 +2432,9 @@ if (currentStep === "summary") {
     <div className="container mx-auto p-4">
       <FloatingInfoButton onClick={() => setShowInfoPopup(true)} />
       <InfoPopup isOpen={showInfoPopup} onClose={() => setShowInfoPopup(false)} />
-      <h1 className="text-3xl font-bold mb-6 text-center">
-        Pool Team Stats Analyzer
-      </h1>
+      <h1 className="text-3xl sm:text-2xl font-bold mb-6 sm:mb-4 text-center">
+  Pool Team Stats Analyzer
+</h1>
 
       <div className="bg-blue-50 p-6 rounded-lg mb-8">
         <h2 className="text-xl font-semibold mb-4">Final Matchups</h2>
