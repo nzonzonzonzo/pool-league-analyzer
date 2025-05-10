@@ -574,6 +574,7 @@ input:checked + .toggle-slider {
 
 input:checked + .toggle-slider:before {
   transform: translateX(22px);
+}
 
 /* Prevent layout shifting */
 .player-card {
