@@ -10,6 +10,19 @@ const formatName = (fullName) => {
     `${parts.slice(0, parts.length - 1).join(' ')} ${parts[parts.length - 1][0]}.`;
 };
 
+// Theme toggle component
+const ThemeToggle = ({ darkMode, toggleDarkMode }) => {
+  return (
+    <button 
+      onClick={toggleDarkMode}
+      className="fixed text-xs text-neutral-500 hover:text-neutral-400 transition-colors z-30"
+      style={{ bottom: '1rem', right: '1rem' }}
+    >
+      Change theme
+    </button>
+  );
+};
+
 // Add these constants outside your App function
 const getInitialTheme = () => {
   try {
