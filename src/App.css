@@ -66,12 +66,12 @@
   --secondary-dark: #2e7d32;   /* Dark green for text/accents */
 
   /* Neutral colors - light theme */
-  --neutral-50: #ffffff;       /* White for main background */
+  --neutral-50: #f3f3f3;       /* Very light gray for main background */
   --neutral-100: #f8f9fa;      /* Very light gray for cards */
-  --neutral-200: #e8eaed;      /* Light gray for borders */
+  --neutral-200: #000000;      /* Black for borders */
   --neutral-300: #dadce0;      /* Medium-light gray for secondary borders */
-  --neutral-400: #bdc1c6;      /* Medium gray for disabled states */
-  --neutral-500: #9aa0a6;      /* Medium gray for secondary text */
+  --neutral-400: #34a853;      /* Green for disabled states */
+  --neutral-500: #627181;      /* Medium gray for secondary text */
   --neutral-600: #5f6368;      /* Dark gray for primary text */
   --neutral-700: #3c4043;      /* Very dark gray for emphasized text */
   --neutral-800: #202124;      /* Nearly black for headings */
@@ -85,7 +85,7 @@
 
   /* Background color */
   --bg-color: #ffffff;         /* Main background color */
-  --card-bg: #f8f9fa;          /* Card background color */
+  --card-bg: #fbfbfb;          /* Card background color */
 
   /* Additional colors for specific elements */
   --filter-bg: rgba(26, 115, 232, 0.1);  /* Semi-transparent blue for filter pills */
@@ -374,29 +374,9 @@ tr:hover td {
 .max-h-\[80vh\] { max-height: 80vh; }
 .m-4 { margin: 1rem; }
 
-.bottom-1 { bottom: 0.25rem; }
-.bottom-2 { bottom: 0.5rem; }
-.bottom-3 { bottom: 0.75rem; }
-.bottom-4 { bottom: 1rem; }
-.bottom-6 { bottom: 1.5rem; }
-.bottom-8 { bottom: 2rem; }
-
-.left-1 { left: 0.25rem; }
-.left-2 { left: 0.5rem; }
-.left-3 { left: 0.75rem; }
-.left-4 { left: 1rem; }
-.left-6 { left: 1.5rem; }
-.left-8 { left: 2rem; }
-
-.right-1 { right: 0.25rem; }
-.right-2 { right: 0.5rem; }
-.right-3 { right: 0.75rem; }
-.right-4 { right: 1rem; }
-.right-6 { right: 1.5rem; }
-.right-8 { right: 2rem; }
-
 .fixed { position: fixed; }
 .top-4 { top: 1rem; }
+.right-4 { right: 1rem; }
 .z-40 { z-index: 40; }
 .p-0 { padding: 0; }
 .bg-transparent { background-color: transparent; }
@@ -522,11 +502,6 @@ tr:hover td {
 .overflow-hidden { overflow: hidden; }
 .cursor-pointer { cursor: pointer; }
 
-.app-title {
-  font-size: 1.875rem; /* equivalent to text-3xl */
-  margin-bottom: 1.5rem; /* equivalent to mb-6 */
-}
-
 /* Responsive utilities */
 @media (min-width: 768px) {
   .md\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -536,11 +511,53 @@ tr:hover td {
   .lg\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
-@media (max-width: 640px) {
-  .app-title {
-    font-size: 1.5rem; /* smaller font for phones */
-    margin-bottom: 1rem; /* smaller margin for phones */
-  }
+/* Classes for the player availability toggle */
+.hidden {
+  display: none !important;
+}
+
+.opacity-50 {
+  opacity: 0.5;
+}
+
+.opacity-80 {
+  opacity: 0.8;
+}
+
+.opacity-100 {
+  opacity: 1;
+}
+
+/* Checkbox custom styling */
+.checkbox-custom {
+  width: 1.25rem;
+  height: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--neutral-400);
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.checkbox-custom.checked {
+  background-color: var(--primary);
+}
+
+.checkbox-icon {
+  width: 0.75rem;
+  height: 0.75rem;
+  stroke-width: 3;
+  color: white;
+}
+
+/* Prevent layout shifting */
+.player-card {
+  min-height: 80px;
+}
+
+.availability-toggle {
+  min-width: 110px;
 }
 
 /* Color adjustments for specific cards in light mode */
