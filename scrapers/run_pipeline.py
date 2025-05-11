@@ -20,9 +20,9 @@ def main():
         print("WARNING: AUTH_COOKIE environment variable is not set. Scrapers may have limited functionality.")
     
     # Create data directory if it doesn't exist
-    os.makedirs("data", exist_ok=True)
-    os.makedirs("data/archives", exist_ok=True)
-    os.makedirs("data/combined", exist_ok=True)
+    os.makedirs("public/data", exist_ok=True)
+    os.makedirs("public/data/archives", exist_ok=True)
+    os.makedirs("public/data/combined", exist_ok=True)
     
     # Step 1: Run match data scraper
     print("\n----- Running match data scraper -----")
