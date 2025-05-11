@@ -4,6 +4,9 @@ on:
   schedule:
     - cron: '0 15 * * 4'  # Run weekly on Thursday at 10:00 AM EST (15:00 UTC)
   workflow_dispatch:     # Allow manual triggering
+  push:
+    branches:
+      - main            # Trigger on pushes to main branch
 
 jobs:
   scrape-and-combine:
