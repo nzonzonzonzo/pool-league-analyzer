@@ -200,10 +200,10 @@ def extract_player_stats(soup):
 
 def main():
     # Create output directory
-    os.makedirs("data", exist_ok=True)
+    os.makedirs("public/data", exist_ok=True)
     
     # Create archives directory
-    archives_dir = "data/archives"
+    archives_dir = "public/data/archives"
     os.makedirs(archives_dir, exist_ok=True)
     
     # Determine current season
@@ -239,7 +239,7 @@ def main():
     current_season_str = f"{current_season['name'].lower()}_{current_season['year']}"
     
     # Save latest version (always updated regardless of season ending)
-    with open("data/player_stats_latest.json", 'w') as f:
+    with open("public/data/player_stats_latest.json", 'w') as f:
         json.dump(players, f, indent=2)
     
     # Group players by team
@@ -260,7 +260,7 @@ def main():
             json.dump(team_players, f, indent=2)
     
     # Save current season version
-    current_season_file = f"data/player_stats_{current_season_str}.json"
+    current_season_file = f"public/data/player_stats_{current_season_str}.json"
     with open(current_season_file, 'w') as f:
         json.dump(players, f, indent=2)
         
