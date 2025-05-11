@@ -27,7 +27,7 @@ def main():
     # Step 1: Run match data scraper
     print("\n----- Running match data scraper -----")
     try:
-        subprocess.run(["python", "scraper.py"], check=True)
+        subprocess.run(["python", "scrapers/scraper.py"], check=True)
         print("Match data scraper completed successfully.")
     except subprocess.CalledProcessError as e:
         print(f"Error running match data scraper: {e}")
@@ -38,7 +38,7 @@ def main():
     # Step 2: Run player stats scraper
     print("\n----- Running player stats scraper -----")
     try:
-        subprocess.run(["python", "player_stats_scraper.py"], check=True)
+        subprocess.run(["python", "scrapers/player_stats_scraper.py"], check=True)
         print("Player stats scraper completed successfully.")
     except subprocess.CalledProcessError as e:
         print(f"Error running player stats scraper: {e}")
