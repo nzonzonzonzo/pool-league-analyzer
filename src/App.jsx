@@ -173,7 +173,7 @@ const InfoPopup = ({ isOpen, onClose }) => {
 };
 
 // Enhanced SearchableDropdown with minimum character requirement and fixed toLowerCase
-function SearchableDropdown({ options, value, onChange, placeholder, minChars = 2 }) {
+function SearchableDropdown({ options, value, onChange, placeholder, minChars = 1 }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState(-1);
