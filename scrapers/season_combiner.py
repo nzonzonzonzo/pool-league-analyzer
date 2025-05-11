@@ -392,7 +392,7 @@ class SeasonDataCombiner:
         
         return rating, trend
     
-    def save_combined_data(self, output_dir="data/combined"):
+    def save_combined_data(self, output_dir="public/data/combined"):
         """Save combined player history data"""
         os.makedirs(output_dir, exist_ok=True)
         
