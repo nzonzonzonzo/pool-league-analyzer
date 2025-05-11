@@ -6,7 +6,7 @@ import re
 import math
 
 class SeasonDataCombiner:
-    def __init__(self, data_dir="data", archives_dir="data/archives"):
+    def __init__(self, data_dir="public/data", archives_dir="public/data/archives"):
         self.data_dir = data_dir
         self.archives_dir = archives_dir
         self.available_seasons = []
