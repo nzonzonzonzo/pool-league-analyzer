@@ -698,62 +698,158 @@ function getHeadToHeadRecord(player1, player2, allMatches) {
 }
 
 // Function to calculate win probability between two players
-function calculateWinProbability(player1, player2, teamStats, allMatches) {
-  // Find player stats
-  const player1Stats = teamStats.find((p) => p.name === player1);
-  const player2Stats = teamStats.find((p) => p.name === player2);
-
-  if (!player1Stats || !player2Stats) return 0.5;
-
-  // Base probability from raw win percentages
-  let p1WinPercentage = 0.5;
-  let p2WinPercentage = 0.5;
-
-  try {
-    p1WinPercentage = parseFloat(player1Stats.winPercentage) / 100;
-    p2WinPercentage = parseFloat(player2Stats.winPercentage) / 100;
-  } catch (e) {
-    console.error("Error parsing win percentages:", e);
-  }
-
-  // Adjust for historical head-to-head performance
-  const h2h = getHeadToHeadRecord(player1, player2, allMatches);
-  let h2hAdjustment = 0;
-
-  if (h2h.totalMatches > 0) {
-    const h2hWinRate = h2h.player1Wins / h2h.totalMatches;
-    // Weight the head-to-head results (more weight if more matches played)
-    const h2hWeight = Math.min(h2h.totalMatches / 5, 0.5); // Cap at 50% influence
-    h2hAdjustment = (h2hWinRate - 0.5) * h2hWeight;
-  }
-
-  // Calculate performance against similar handicap levels
-  const p1VsHandicap = calculateWinRatesByHandicap(player1, allMatches);
-  const p2VsHandicap = calculateWinRatesByHandicap(player2, allMatches);
-
-  // Get the handicap difference, but only use it to select the appropriate category
-  const handicapDiff = player1Stats.handicap - player2Stats.handicap;
+function calculateWinProbability(
+  homePlayerName,
+  awayPlayerName,
+  teamStats,
+  allMatches
+) {
+  // Find players in team stats
+  const homePlayer = teamStats.find(p => p.name === homePlayerName);
+  const awayPlayer = teamStats.find(p => p.name === awayPlayerName);
   
-  let handicapCategoryAdjustment = 0;
-  if (handicapDiff < 0) {
-    // Player 1 is playing against a higher handicapped player
-    handicapCategoryAdjustment =
-      ((p1VsHandicap.higher || 0) - (p2VsHandicap.lower || 0)) * 0.1;
-  } else if (handicapDiff > 0) {
-    // Player 1 is playing against a lower handicapped player
-    handicapCategoryAdjustment =
-      ((p1VsHandicap.lower || 0) - (p2VsHandicap.higher || 0)) * 0.1;
-  } else {
-    // Equal handicaps
-    handicapCategoryAdjustment =
-      ((p1VsHandicap.equal || 0) - (p2VsHandicap.equal || 0)) * 0.1;
+  if (!homePlayer || !awayPlayer) {
+    return 0.5; // Default to 50% if either player isn't found
   }
-
-  // Combine all factors and ensure probability is between 0.05 and 0.95
-  return Math.max(0.05, Math.min(0.95, 0.5 +
-    (p1WinPercentage - p2WinPercentage) * 0.3 +
-    h2hAdjustment +
-    handicapCategoryAdjustment));
+  
+  // Get handicap relationship
+  const homeHCP = homePlayer.handicap;
+  const awayHCP = awayPlayer.handicap;
+  const handicapRelationship = homeHCP < awayHCP ? "lower" : (homeHCP > awayHCP ? "higher" : "equal");
+  
+  // Analyze player's historical performance against different handicap levels
+  function getHandicapPerformance(playerName, handicapRelation) {
+    const playerMatches = allMatches.filter(match => 
+      match.homePlayer === playerName || match.awayPlayer === playerName
+    );
+    
+    if (playerMatches.length === 0) return { winRate: 0.5, matchCount: 0 };
+    
+    const relevantMatches = playerMatches.filter(match => {
+      let playerHCP, opponentHCP;
+      
+      if (match.homePlayer === playerName) {
+        playerHCP = match.homeHCP;
+        opponentHCP = match.awayHCP;
+      } else {
+        playerHCP = match.awayHCP;
+        opponentHCP = match.homeHCP;
+      }
+      
+      if (handicapRelation === "lower") return playerHCP < opponentHCP;
+      if (handicapRelation === "higher") return playerHCP > opponentHCP;
+      return playerHCP === opponentHCP;
+    });
+    
+    if (relevantMatches.length === 0) return { winRate: 0.5, matchCount: 0 };
+    
+    const wins = relevantMatches.filter(match => {
+      if (match.homePlayer === playerName) return match.winner === playerName;
+      else return match.winner === playerName;
+    }).length;
+    
+    return {
+      winRate: wins / relevantMatches.length,
+      matchCount: relevantMatches.length
+    };
+  }
+  
+  // Calculate how home player performs against players with higher/lower/equal handicap
+  const homeVsRelationPerformance = getHandicapPerformance(homePlayerName, handicapRelationship);
+  
+  // Calculate how away player performs as higher/lower/equal handicap
+  // Need inverse relationship - if home is playing against higher, then away is playing as higher
+  const awayAsRelationPerformance = getHandicapPerformance(
+    awayPlayerName, 
+    handicapRelationship === "higher" ? "lower" : 
+    (handicapRelationship === "lower" ? "higher" : "equal")
+  );
+  
+  // Calculate base probability using each player's performance against this handicap scenario
+  let baseProbability;
+  
+  // Start with 50/50
+  baseProbability = 0.5;
+  
+  // Adjust based on home player's performance against this handicap relationship
+  if (homeVsRelationPerformance.matchCount > 0) {
+    // Weight increases with sample size (max weight of 0.3 with 10+ matches)
+    const homeWeight = Math.min(0.3, homeVsRelationPerformance.matchCount / 10 * 0.3);
+    baseProbability = (baseProbability * (1 - homeWeight)) + (homeVsRelationPerformance.winRate * homeWeight);
+  }
+  
+  // Adjust based on away player's performance as this handicap relationship
+  if (awayAsRelationPerformance.matchCount > 0) {
+    // Weight increases with sample size (max weight of 0.3 with 10+ matches)
+    const awayWeight = Math.min(0.3, awayAsRelationPerformance.matchCount / 10 * 0.3);
+    // Use 1 - winRate because we're calculating probability for home player
+    baseProbability = (baseProbability * (1 - awayWeight)) + ((1 - awayAsRelationPerformance.winRate) * awayWeight);
+  }
+  
+  // Apply small default adjustment based on handicap difference (small effect, 1-2%)
+  // This is a minor factor compared to historical performance
+  const handicapDiff = homeHCP - awayHCP;
+  baseProbability += handicapDiff * 0.01; // Just 1% advantage per handicap point as a minor factor
+  
+  // Adjust for recent handicap changes
+  if (homePlayer.handicapChangedRecently) {
+    // If handicap went up recently, player might perform slightly worse than their new handicap suggests
+    if (homePlayer.handicapTrend === 'increasing') {
+      baseProbability -= 0.03; // Slight disadvantage for recently increased handicap
+    } else if (homePlayer.handicapTrend === 'decreasing') {
+      baseProbability += 0.02; // Slight advantage for recently decreased handicap
+    }
+  }
+  
+  if (awayPlayer.handicapChangedRecently) {
+    // Same adjustment for away player
+    if (awayPlayer.handicapTrend === 'increasing') {
+      baseProbability += 0.03; // Advantage when playing against someone with recently increased handicap
+    } else if (awayPlayer.handicapTrend === 'decreasing') {
+      baseProbability -= 0.02; // Disadvantage when playing against someone with recently decreased handicap
+    }
+  }
+  
+  // Adjust for experience (seasons played)
+  const homePlayerExperience = homePlayer.seasonsPlayed || 1;
+  const awayPlayerExperience = awayPlayer.seasonsPlayed || 1;
+  
+  // Small advantage for more experienced players (diminishing returns)
+  const experienceFactor = 0.02 * Math.log(homePlayerExperience / awayPlayerExperience + 1);
+  baseProbability += experienceFactor;
+  
+  // Adjust for recent performance trends (using ELO rating trend)
+  if (homePlayer.ratingTrend === 'improving') {
+    baseProbability += 0.03;
+  } else if (homePlayer.ratingTrend === 'declining') {
+    baseProbability -= 0.03;
+  }
+  
+  if (awayPlayer.ratingTrend === 'improving') {
+    baseProbability -= 0.03;
+  } else if (awayPlayer.ratingTrend === 'declining') {
+    baseProbability += 0.03;
+  }
+  
+  // Check head-to-head match history
+  const headToHeadMatches = allMatches.filter(match => 
+    (match.homePlayer === homePlayerName && match.awayPlayer === awayPlayerName) ||
+    (match.homePlayer === awayPlayerName && match.awayPlayer === homePlayerName)
+  );
+  
+  if (headToHeadMatches.length > 0) {
+    const homeWins = headToHeadMatches.filter(match => 
+      (match.homePlayer === homePlayerName && match.winner === homePlayerName) ||
+      (match.awayPlayer === homePlayerName && match.winner === homePlayerName)
+    ).length;
+    
+    const headToHeadWinRate = homeWins / headToHeadMatches.length;
+    // Blend head-to-head history with overall probability (30% weight to head-to-head)
+    baseProbability = (baseProbability * 0.7) + (headToHeadWinRate * 0.3);
+  }
+  
+  // Ensure probability is between 0.1 and 0.9 (never completely certain)
+  return Math.max(0.1, Math.min(0.9, baseProbability));
 }
 
 // Find the optimal player selection for responding to an opponent's choice
@@ -1004,6 +1100,8 @@ const togglePlayerAvailability = (playerName, team) => {
     game4: { home: null, away: null },
   });
 
+  const [playerHistory, setPlayerHistory] = useState({});
+
 
    // Define DebugPanel component within App
   const DebugPanel = () => {
@@ -1072,46 +1170,72 @@ useEffect(() => {
 
   // Load data on component mount
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        // Load JSON files
-        const basePath = import.meta.env.BASE_URL;
-        const matchesResponse = await fetch(`${basePath}data/all_matches.json`);
-        const statsResponse = await fetch(`${basePath}data/team_stats.json`);
+  const loadData = async () => {
+    try {
+      // Load JSON files
+      const basePath = import.meta.env.BASE_URL;
+      
+      // Load match data (current season)
+      const matchesResponse = await fetch(`${basePath}data/all_matches_latest.json`);
+      
+      // Load regular team stats
+      const statsResponse = await fetch(`${basePath}data/player_stats_latest.json`);
+      
+      // Load combined player history data (new!)
+      const playerHistoryResponse = await fetch(`${basePath}data/combined/player_summary.json`);
+      
+      if (!matchesResponse.ok || !statsResponse.ok) {
+        throw new Error("Failed to fetch data files");
+      }
 
-        if (!matchesResponse.ok || !statsResponse.ok) {
-          throw new Error("Failed to fetch data files");
-        }
-
-        const matchesData = await matchesResponse.json();
-        const statsData = await statsResponse.json();
-
-        // Filter out forfeit matches
-        const validMatches = matchesData.filter(match => !match.forfeit);
-        setAllMatches(validMatches);
+      const matchesData = await matchesResponse.json();
+      const statsData = await statsResponse.json();
+      
+      // Filter out forfeit matches
+      const validMatches = matchesData.filter(match => !match.forfeit);
+      setAllMatches(validMatches);
+      
+      // Load combined history if available, otherwise use standard behavior
+      let playerHistory = {};
+      if (playerHistoryResponse.ok) {
+        playerHistory = await playerHistoryResponse.json();
+        setPlayerHistory(playerHistory);
+      }
+      
+      // Transform stats to add displayName, availability, and enhanced data
+      const transformedStats = statsData.map(player => {
+        const playerHistoryData = playerHistory[player.name] || {};
         
-        // Transform stats to add displayName and availability
-        const transformedStats = statsData.map(player => ({
+        return {
           ...player,
           displayName: formatName(player.name),
-          available: true // Default all players to available
-        }));
-        setTeamStats(transformedStats);
+          available: true, // Default all players to available
+          handicapTrend: playerHistoryData.handicap_trend || 'stable',
+          recentWinPercentage: playerHistoryData.recent_win_percentage || 0,
+          eloRating: playerHistoryData.elo_rating || 1500,
+          ratingTrend: playerHistoryData.rating_trend || 'stable',
+          handicapChangedRecently: playerHistoryData.handicap_changed_recently || false,
+          seasonsPlayed: playerHistoryData.seasons_played || 1,
+          teamHistory: playerHistoryData.team_history || [player.team]
+        };
+      });
+      
+      setTeamStats(transformedStats);
 
-        // Extract unique team names
-        const uniqueTeams = [...new Set(statsData.map(player => player.team))].sort();
-        setTeams(uniqueTeams);
-        
-        setLoading(false);
-      } catch (err) {
-        console.error("Error loading data:", err);
-        setError("Failed to load data: " + err.message);
-        setLoading(false);
-      }
-    };
+      // Extract unique team names
+      const uniqueTeams = [...new Set(statsData.map(player => player.team))].sort();
+      setTeams(uniqueTeams);
+      
+      setLoading(false);
+    } catch (err) {
+      console.error("Error loading data:", err);
+      setError("Failed to load data: " + err.message);
+      setLoading(false);
+    }
+  };
 
-    loadData();
-  }, []);
+  loadData();
+}, []);
 
   // Update team players when selection changes
   useEffect(() => {
