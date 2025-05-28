@@ -650,3 +650,5 @@ input:checked + .toggle-slider:before {
 :root[data-theme="light"] .text-gray-800 {
   color: var(--neutral-800);
 }
+
+
